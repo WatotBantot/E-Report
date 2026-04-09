@@ -140,29 +140,49 @@ public class DBIntegrationTest {
     public static void testTableRecreation() {
         System.out.println("[INTEGRATION TEST] Table Creation (Second Run)");
 
+        // List of tables to verify
+        String[] tables = {
+                "User_Info",
+                "Credential",
+                "Complaint_Detail",
+                "Complaint",
+                "Complaint_Action",
+                "Complaint_History_Detail",
+                "Complaint_History"
+        };
+
         try (Connection con = DBConnection.connect()) {
+            // Attempt to create tables again
             TBCreate.createTables(con);
+            System.out.println("-> Tables creation method executed.");
 
-            // Verify tables still exist
-            String[] tables = {
-                    "User_Info",
-                    "Credential",
-                    "Complaint_Detail",
-                    "Complaint",
-                    "Complaint_Action",
-                    "Complaint_History_Detail",
-                    "Complaint_History"
-            };
+            boolean allExist = true;
 
+            // Verify each table exists by querying the metadata
             for (String table : tables) {
-                try (ResultSet rs = con.createStatement().executeQuery("SELECT * FROM " + table + " LIMIT 1")) {
-                    // If no exception, table exists
+                try {
+                    // Using metadata instead of query for safer check
+                    if (!con.getMetaData().getTables(null, null, table, null).next()) {
+                        System.out.println("-> FAIL: Table missing: " + table);
+                        allExist = false;
+                    } else {
+                        System.out.println("-> Table verified: " + table);
+                    }
+                } catch (SQLException e) {
+                    System.out.println("-> FAIL: Could not verify table " + table + ": " + e.getMessage());
+                    allExist = false;
                 }
             }
 
-            System.out.println("-> PASS: Table recreation handled successfully\n");
+            if (allExist) {
+                System.out.println("-> PASS: All tables exist and recreation handled successfully.\n");
+            } else {
+                System.out.println("-> FAIL: Some tables are missing after recreation.\n");
+                allTestsPassed = false;
+            }
+
         } catch (SQLException e) {
-            System.out.println("-> FAIL: Table recreation verification failed: " + e.getMessage() + "\n");
+            System.out.println("-> FAIL: Table recreation execution failed: " + e.getMessage() + "\n");
             allTestsPassed = false;
         }
     }
