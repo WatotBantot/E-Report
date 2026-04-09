@@ -1,5 +1,21 @@
 Frontend Usage Guide
 
+Before using, make sure you already added sql connector on the following path (VS Code)
+"JAVA PROJECTS"
+-> "E-Report"
+--> "Referenced Libraries"
+--> connector here (e.g. mysql-connector-j-x.x.x.jar) x.x.x is version number
+
+Run the following to initialize the software
+E_Report.java
+
+Note: Only focus on Services, Controller, and Features classes folder
+Only on the Features folder the GUI/UI will be added
+
+=========
+
+Controllers
+
 1.  AuthCredentialController
 
     Purpose:
@@ -46,7 +62,7 @@ Frontend Usage Guide
 
     }
 
-=========
+---
 
 2.  ComplaintServiceController
 
