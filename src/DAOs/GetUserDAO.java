@@ -54,7 +54,7 @@ public class GetUserDAO {
                     ui.setSex(rs.getString("sex"));
                     ui.setContact(rs.getString("contact_number"));
                     ui.setEmail(rs.getString("email_address"));
-                    ui.setHouseNum(rs.getInt("house_number"));
+                    ui.setHouseNum(rs.getString("house_number"));
                     ui.setStreet(rs.getString("street"));
                     ui.setPurok(rs.getString("purok"));
                     return ui;

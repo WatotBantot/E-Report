@@ -57,7 +57,7 @@ public class AddUserDAOTest {
             ui.setSex("M");
             ui.setContact("123456789");
             ui.setEmail("johndoe@example.com");
-            ui.setHouseNum(42);
+            ui.setHouseNum("42");
             ui.setStreet("Oak St.");
             ui.setPurok("Purok 4");
 

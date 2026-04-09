@@ -25,7 +25,7 @@ public class AppConfig {
                 sex VARCHAR(10) NOT NULL,
                 contact_number VARCHAR(11) UNIQUE NOT NULL,
                 email_address VARCHAR(50) UNIQUE NOT NULL,
-                house_number TINYINT NOT NULL,
+                house_number VARCHAR NOT NULL,
                 street VARCHAR(50) NOT NULL,
                 purok VARCHAR(50) NOT NULL
             );

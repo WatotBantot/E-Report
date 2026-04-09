@@ -1,11 +1,11 @@
 package models;
 
 public class UserInfo {
-    private String fName, mName, lName, sex, contact, email, street, purok;
-    private int UI_ID, houseNum;
+    private String fName, mName, lName, sex, contact, email, houseNum, street, purok;
+    private int UI_ID;
 
     public UserInfo(int UI_ID, String fName, String mName, String lName, String sex, String contact, String email,
-            int houseNum,
+            String houseNum,
             String street, String purok) {
         this.fName = fName;
         this.mName = mName;
@@ -77,11 +77,11 @@ public class UserInfo {
         this.email = email;
     }
 
-    public int getHouseNum() {
+    public String getHouseNum() {
         return houseNum;
     }
 
-    public void setHouseNum(int houseNum) {
+    public void setHouseNum(String houseNum) {
         this.houseNum = houseNum;
     }
 
