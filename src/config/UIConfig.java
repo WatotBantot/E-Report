@@ -5,6 +5,12 @@ import java.awt.*;
 public class UIConfig {
 
     // =========================
+    // PATHS
+    // =========================
+    public static final String LOGO_PATH = "src/assets/barangay_logo.png";
+    public static final String BACKGROUND_PATH = "src/assets/background1.png";
+
+    // =========================
     // WINDOW
     // =========================
     public static final int WIDTH = 1280;

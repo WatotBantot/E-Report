@@ -1,6 +1,9 @@
 package features.ui;
 
 import javax.swing.*;
+
+import config.UIConfig;
+
 import java.awt.*;
 import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
@@ -8,10 +11,6 @@ import java.io.File;
 import javax.imageio.ImageIO;
 
 public class HomepageUI extends JFrame {
-
-    // --- FILE DIRECTORIES ---
-    private static final String LOGO_PATH = "src/assets/barangay_logo.png";
-    private static final String BACKGROUND_PATH = "src/assets/background1.png";
 
     private static final int WIDTH = 1280;
     private static final int HEIGHT = 720;
@@ -24,7 +23,7 @@ public class HomepageUI extends JFrame {
         setLocationRelativeTo(null);
 
         // Main Container
-        BackgroundPanel mainPanel = new BackgroundPanel(BACKGROUND_PATH);
+        BackgroundPanel mainPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
         mainPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -32,7 +31,7 @@ public class HomepageUI extends JFrame {
 
         // 1. Logo - Increased size and quality
         // We use a larger target size to ensure clarity on high-DPI screens
-        ImageIcon logoIcon = loadHighFidelityImage(LOGO_PATH, 280, 280);
+        ImageIcon logoIcon = loadHighFidelityImage(UIConfig.LOGO_PATH, 280, 280);
         JLabel logoLabel = (logoIcon != null) ? new JLabel(logoIcon) : new JLabel("Logo Not Found");
         gbc.gridy = 0;
         gbc.insets = new Insets(0, 0, 20, 0);
