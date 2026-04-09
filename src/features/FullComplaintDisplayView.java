@@ -116,35 +116,30 @@ public class FullComplaintDisplayView extends JFrame {
             personsLbl.setText("Persons Involved: " + cd.getPersonsInvolved());
             detailsArea.setText(cd.getDetails());
 
-            String photoPath = cd.getPhotoAttachment();
+            // --- Updated: Read image from BLOB bytes ---
+            byte[] photoBytes = cd.getPhotoAttachmentBytes();
 
-            if (photoPath != null && !photoPath.trim().isEmpty()) {
-                File file = new File(photoPath);
+            if (photoBytes != null && photoBytes.length > 0) {
+                try {
+                    ImageIcon originalIcon = new ImageIcon(photoBytes); // create from byte array
+                    Image img = originalIcon.getImage();
+                    Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
 
-                if (file.exists()) {
-                    try {
-                        ImageIcon originalIcon = new ImageIcon(photoPath);
-                        Image img = originalIcon.getImage();
+                    imageLabel.setIcon(new ImageIcon(scaledImg));
+                    imageLabel.setText("");
 
-                        Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-
-                        imageLabel.setIcon(new ImageIcon(scaledImg));
-                        imageLabel.setText("");
-
-                    } catch (Exception e) {
-                        imageLabel.setIcon(null);
-                        imageLabel.setText("Error rendering image.");
-                        e.printStackTrace();
-                    }
-                } else {
+                } catch (Exception e) {
                     imageLabel.setIcon(null);
-                    imageLabel.setText("Image not found on disk: " + file.getName());
+                    imageLabel.setText("Error rendering image.");
+                    e.printStackTrace();
                 }
             } else {
                 imageLabel.setIcon(null);
                 imageLabel.setText("No photo attached to this record.");
             }
+
         } else {
+            imageLabel.setIcon(null);
             imageLabel.setText("Complaint record not found for User ID: " + userId + ", Complaint ID: " + complaintId);
         }
     }

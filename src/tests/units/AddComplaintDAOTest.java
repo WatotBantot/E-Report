@@ -8,6 +8,7 @@ import models.ComplaintAction;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -71,7 +72,7 @@ public class AddComplaintDAOTest {
             cd.setPersonsInvolved("John Doe");
             cd.setDetails("Playing loud music at 2 AM.");
 
-            // FIX: Create a local temporary dummy file to simulate the dropped file
+            // 3. Create a temporary dummy file to simulate image upload
             String mockFilePath = System.getProperty("user.dir") + "/test_evidence.jpg";
             mockFile = new File(mockFilePath);
 
@@ -79,23 +80,24 @@ public class AddComplaintDAOTest {
                 writer.write("Simulated image data");
             }
 
-            // Set the absolute path string to the model!
-            cd.setPhotoAttachment(mockFile.getAbsolutePath());
+            // 4. Read file bytes and attach as BLOB
+            byte[] fileBytes = Files.readAllBytes(mockFile.toPath());
+            cd.setPhotoAttachmentBytes(fileBytes);
 
             int dummyUserId = 1;
 
-            // 3. Run the target code
-            AddComplaintDAO.addComplaint(con, dummyUserId, cd);
+            // 5. Run the target code
+            dao.addComplaint(con, dummyUserId, cd);
 
-            // 4. Check the row count again!
+            // 6. Check the row count again
             int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
 
-            // 5. If the count didn't go up by exactly 1, force a failure.
+            // 7. Verify the row count increased by exactly 1
             if (afterCount == initialCount + 1) {
                 System.out.println("-> PASS: Complaint record successfully verified in database.\n");
             } else {
-                System.out.println("-> FAIL: Row count did not increase! Expected " + (initialCount + 1) + " but got "
-                        + afterCount + ".\n");
+                System.out.println("-> FAIL: Row count did not increase! Expected " + (initialCount + 1)
+                        + " but got " + afterCount + ".\n");
                 allTestsPassed = false;
             }
 
@@ -103,7 +105,7 @@ public class AddComplaintDAOTest {
             System.out.println("-> FAIL: Exception occurred: " + e.getMessage() + "\n");
             allTestsPassed = false;
         } finally {
-            // Clean up the dummy test file from your computer after the test finishes
+            // 8. Clean up the dummy test file
             if (mockFile != null && mockFile.exists()) {
                 mockFile.delete();
             }

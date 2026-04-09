@@ -5,7 +5,9 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
+import java.nio.file.Files;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
@@ -70,27 +72,28 @@ public class ComplaintServiceTest {
             cd.setSubject("Stolen Bicycle outside Brgy. Hall");
             cd.setType("Theft");
             cd.setPersonsInvolved("Unidentified suspect wearing a black hoodie and blue cap");
-
             cd.setDetails("I parked my mountain bike (red and black Trinx) outside the Barangay Hall " +
                     "while I went inside to secure a permit at around 2:30 PM today. When I came out " +
                     "at around 3:00 PM, the bike was gone. The lock was cut and left on the ground. " +
                     "The CCTV in the area might have captured the incident.");
-
             cd.setCurrentStatus("Pending");
             cd.setDateTime(new Timestamp(System.currentTimeMillis()));
-
             cd.setStreet("Rizal Street");
             cd.setPurok("Purok 4");
             cd.setLatitude(15.6625);
             cd.setLongitude(121.0142);
 
-            int mockUserId = 1; // Assuming User ID 1 exists in your database
+            // 3a. Attach the image bytes
+            byte[] imageBytes = Files.readAllBytes(realImageFile.toPath());
+            cd.setPhotoAttachmentBytes(imageBytes);
 
-            // 4. Act: Call your frontend controller method
+            int mockUserId = 1; // Assuming User ID 1 exists
+
+            // 4. Act: Call service.addComplaint()
             System.out.println("-> Calling service.addComplaint()...");
             service.addComplaint(mockUserId, cd, realImageFile);
 
-            // 5. Assert A: Check if the row count in the database increased
+            // 5. Assert A: Check row count increment
             int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
             if (afterCount != initialCount + 1) {
                 System.out.println("-> FAIL: Database row count did not increase!");
@@ -98,23 +101,11 @@ public class ComplaintServiceTest {
                 return;
             }
 
-            // 6. Assert B: Check if the file physically exists in your target directory
-            String savedPath = cd.getPhotoAttachment();
-            if (savedPath != null) {
-                File copiedFile = new File(savedPath);
-                if (copiedFile.exists()) {
-                    System.out.println("-> PASS: Real image physically verified in your project images folder!");
-
-                    // Note: I'm leaving this delete line commented out so you can manually
-                    // go to your OneDrive images folder and check that the real photo is there!
-                    // copiedFile.delete();
-                } else {
-                    System.out
-                            .println("-> FAIL: Path saved in model, but physical file is missing from target folder!");
-                    testPassed = false;
-                }
+            // 6. Assert B: Verify that image bytes are set in the model
+            if (cd.getPhotoAttachmentBytes() != null && cd.getPhotoAttachmentBytes().length > 0) {
+                System.out.println("-> PASS: Image BLOB successfully attached to the complaint record!");
             } else {
-                System.out.println("-> FAIL: Photo attachment path was not set in the model!");
+                System.out.println("-> FAIL: Image BLOB is missing in the model!");
                 testPassed = false;
             }
 

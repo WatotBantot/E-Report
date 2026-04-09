@@ -61,29 +61,24 @@ public class GetComplaintDAOTest {
     // ==========================================
     public static void testGetComplaint(GetComplaintDAO dao, int uiId, int cdId) {
         System.out.println("[TEST] Get Single Complaint");
+
         try {
             ComplaintDetail cd = dao.getComplaint(uiId, cdId);
             if (cd != null) {
                 System.out.println("-> PASS: Successfully fetched Complaint ID: " + cdId);
                 System.out.println("   Subject: " + cd.getSubject());
 
-                // FIX: Treat getPhotoAttachment as a String path instead of a Blob
-                String photoPath = cd.getPhotoAttachment();
-                if (photoPath != null && !photoPath.trim().isEmpty()) {
-                    System.out.println("   Photo Attachment: Path found in DB! (" + photoPath + ")");
-
-                    // Verify if the file physically exists on the disk
-                    File file = new File(photoPath);
-                    if (file.exists()) {
-                        System.out.println("   File Check: File physically exists on disk.");
-                    } else {
-                        System.out
-                                .println("   File Check: [Warning] Path recorded, but file is missing on local drive.");
-                    }
+                // Check the image BLOB
+                byte[] photoBytes = cd.getPhotoAttachmentBytes(); // Updated to BLOB field
+                if (photoBytes != null && photoBytes.length > 0) {
+                    System.out
+                            .println("   Photo Attachment: BLOB found in DB! (Size: " + photoBytes.length + " bytes)");
                 } else {
                     System.out.println("   Photo Attachment: [No image attached]");
                 }
+
                 System.out.println();
+
             } else {
                 System.out.println("-> FAIL: Returned complaint object was null.\n");
                 allTestsPassed = false;
