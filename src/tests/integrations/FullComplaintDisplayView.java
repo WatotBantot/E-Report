@@ -15,6 +15,7 @@ import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -102,7 +103,18 @@ public class FullComplaintDisplayView extends JFrame {
 
     public void loadAllComplaintData(int userId, int complaintId) {
         GetComplaintDAO dao = new GetComplaintDAO();
-        ComplaintDetail cd = dao.getComplaint(userId, complaintId);
+        ComplaintDetail cd = null;
+
+        try {
+            cd = dao.getComplaint(userId, complaintId);
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                    "❌ Database connection failed or error occurred:\n" + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+            return;
+        }
 
         if (cd != null) {
             subjectLbl.setText("Subject: " + cd.getSubject());
@@ -115,18 +127,14 @@ public class FullComplaintDisplayView extends JFrame {
             personsLbl.setText("Persons Involved: " + cd.getPersonsInvolved());
             detailsArea.setText(cd.getDetails());
 
-            // --- Updated: Read image from BLOB bytes ---
             byte[] photoBytes = cd.getPhotoAttachmentBytes();
-
             if (photoBytes != null && photoBytes.length > 0) {
                 try {
-                    ImageIcon originalIcon = new ImageIcon(photoBytes); // create from byte array
+                    ImageIcon originalIcon = new ImageIcon(photoBytes);
                     Image img = originalIcon.getImage();
                     Image scaledImg = img.getScaledInstance(400, 400, Image.SCALE_SMOOTH);
-
                     imageLabel.setIcon(new ImageIcon(scaledImg));
                     imageLabel.setText("");
-
                 } catch (Exception e) {
                     imageLabel.setIcon(null);
                     imageLabel.setText("Error rendering image.");
@@ -139,7 +147,11 @@ public class FullComplaintDisplayView extends JFrame {
 
         } else {
             imageLabel.setIcon(null);
-            imageLabel.setText("Complaint record not found for User ID: " + userId + ", Complaint ID: " + complaintId);
+            imageLabel.setText("Complaint record not found.");
+            JOptionPane.showMessageDialog(this,
+                    "⚠️ No data found for User ID: " + userId + ", Complaint ID: " + complaintId,
+                    "No Data Found",
+                    JOptionPane.WARNING_MESSAGE);
         }
     }
 
@@ -175,24 +187,16 @@ public class FullComplaintDisplayView extends JFrame {
             FullComplaintDisplayView view = new FullComplaintDisplayView();
             view.setVisible(true);
 
-            // Fetch real IDs directly from the database dynamically
             List<int[]> validIdsList = findValidIdsFromDatabase(5);
 
             if (!validIdsList.isEmpty()) {
-                System.out.println("Found " + validIdsList.size() + " records in DB!");
-
-                // Let's grab the very first pair returned (Index 0) to display in the UI Change
-                // the value here inside get method to change pairs
-                int[] firstPair = validIdsList.get(1);
-
-                System.out.println(
-                        "Rendering first found IDs -> User ID: " + firstPair[0] + ", Complaint ID: "
-                                + firstPair[1]);
+                int[] firstPair = validIdsList.get(0);
                 view.loadAllComplaintData(firstPair[0], firstPair[1]);
-
             } else {
-                System.out.println("No data found in database. Attempting fallback hardcoded IDs (1, 1)...");
-                view.loadAllComplaintData(1, 1);
+                JOptionPane.showMessageDialog(view,
+                        "⚠️ No complaint records available in the database.",
+                        "No Data",
+                        JOptionPane.WARNING_MESSAGE);
             }
         });
     }
