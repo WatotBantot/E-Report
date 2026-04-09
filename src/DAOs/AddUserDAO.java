@@ -3,82 +3,92 @@ package DAOs;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.ResultSet;
+
+import config.AppConfig;
 import models.UserInfo;
 import models.Credential;
 
 /**
- * Adding logic shall be the following:
- * addUser() -> addCredential();
- * 
- * All method in this class
- * addUser(Connection con, UserInfo ui)
- * addCredential(Connection con, int userID, Credential c)
+ * DAO responsible for inserting users and their credentials.
+ * Workflow: addUser() -> addCredential()
  */
-
 public class AddUserDAO {
 
     /**
-     * This method is used to add user info on user_info table
-     * addUser();
-     * 
-     * @params DB Connection, UserInfo data
-     * @return none
+     * Inserts a new user into the User_Info table and returns the generated user
+     * ID.
+     *
+     * @param con DB connection
+     * @param ui  UserInfo object
+     * @return auto-generated user ID, or -1 if insertion failed
      */
+    public int addUser(Connection con, UserInfo ui) {
+        String query = """
+                INSERT INTO %s(first_name, middle_name, last_name, sex,
+                                contact_number, email_address, house_number,
+                                street, purok)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """.formatted(AppConfig.TABLE_USER_INFO);
 
-    public void addUser(Connection con, UserInfo ui) {
+        try (PreparedStatement stmt = con.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, ui.getFName());
+            stmt.setString(2, ui.getMName());
+            stmt.setString(3, ui.getLName());
+            stmt.setString(4, ui.getSex());
+            stmt.setString(5, ui.getContact());
+            stmt.setString(6, ui.getEmail());
+            stmt.setInt(7, ui.getHouseNum());
+            stmt.setString(8, ui.getStreet());
+            stmt.setString(9, ui.getPurok());
 
-        String query = "INSERT INTO User_Info(first_name, middle_name, last_name, sex, contact_number, email_address, house_number, street, purok) VALUES(?,?,?,?,?,?,?,?,?);";
-        int rows;
-        PreparedStatement statement;
+            int rows = stmt.executeUpdate();
+            System.out.println(rows + " row(s) inserted into " + AppConfig.TABLE_USER_INFO);
 
-        try {
-            statement = con.prepareStatement(query);
-            statement.setString(1, ui.getFName());
-            statement.setString(2, ui.getMName());
-            statement.setString(3, ui.getLName());
-            statement.setString(4, ui.getSex());
-            statement.setString(5, ui.getContact());
-            statement.setString(6, ui.getEmail());
-            statement.setInt(7, ui.getHouseNum());
-            statement.setString(8, ui.getStreet());
-            statement.setString(9, ui.getPurok());
-
-            rows = statement.executeUpdate();
-            System.out.println(rows + " rows(s) inserted on User_Info");
+            try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                if (generatedKeys.next()) {
+                    return generatedKeys.getInt(1);
+                }
+            }
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Failed to insert user into " + AppConfig.TABLE_USER_INFO);
+            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
         }
 
+        return -1;
     }
 
     /**
-     * This method is used to add credential on credential table
-     * addCredential();
-     * 
-     * @params DB Connection, user Id, Credential data
-     * @return none
+     * Inserts a credential for a specific user into the Credential table.
+     *
+     * @param con    DB connection
+     * @param userID user ID from User_Info table
+     * @param c      Credential object
+     * @return true if insertion succeeded, false otherwise
      */
+    public boolean addCredential(Connection con, int userID, Credential c) {
+        String query = """
+                INSERT INTO %s(UI_ID, username, password, role, is_verified)
+                VALUES (?, ?, ?, ?, ?);
+                """.formatted(AppConfig.TABLE_CREDENTIAL);
 
-    public void addCredential(Connection con, int userID, Credential c) {
-        String query = "INSERT INTO Credential(UI_ID, username, password, role, is_verified) VALUES(?,?,?,?,?);";
-        int rows;
-        PreparedStatement statement;
+        try (PreparedStatement stmt = con.prepareStatement(query)) {
+            stmt.setInt(1, userID);
+            stmt.setString(2, c.getUsername());
+            stmt.setString(3, c.getPassword());
+            stmt.setString(4, c.getRole());
+            stmt.setBoolean(5, c.getIsVerified());
 
-        try {
-            statement = con.prepareStatement(query);
-            statement = con.prepareStatement(query);
-            statement.setInt(1, userID);
-            statement.setString(2, c.getUsername());
-            statement.setString(3, c.getPassword());
-            statement.setString(4, c.getRole());
-            statement.setBoolean(5, c.getIsVerified());
-
-            rows = statement.executeUpdate();
-            System.out.println(rows + " rows(s) inserted on Credential");
+            int rows = stmt.executeUpdate();
+            System.out.println(rows + " row(s) inserted into " + AppConfig.TABLE_CREDENTIAL);
+            return rows > 0;
 
         } catch (SQLException e) {
-            e.printStackTrace();
+            System.err.println("Failed to insert credential for user ID " + userID);
+            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
+            return false;
         }
     }
 }

@@ -1,59 +1,99 @@
 package config;
 
-import java.sql.Statement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
+/**
+ * Utility class responsible for creating the database if it does not exist.
+ * 
+ * This class checks whether the database 'e_report' exists and creates it
+ * automatically if it is missing.
+ */
 public class DBCreate {
 
     /**
-     * This method is used to create Database when it does not still exists to avoid
-     * error on DB Connection
-     * 
-     * @params none
-     * @return none
+     * Creates the database 'e_report' if it does not already exist.
+     *
+     * Process:
+     * - Connects to the MySQL server (without specifying a database)
+     * - Checks whether 'e_report' exists
+     * - Creates the database if it does not exist
+     *
+     * @throws RuntimeException if a database connection or creation fails
      */
-
     public static void createDatabase() {
-        final String url = "jdbc:mysql://localhost:3306";
-        final String username = "root";
-        final String password = "";
-        Statement statement = null;
-        Connection con = null;
-        String query, checkQuery;
-        ResultSet rs = null;
+        // MySQL server URL (without specifying database)
+        String url = "jdbc:mysql://localhost:3306";
 
-        try {
-            con = DriverManager.getConnection(url, username, password);
+        // Query to check if the database already exists
+        String checkQuery = "SHOW DATABASES LIKE 'e_report';";
 
-            statement = con.createStatement();
-            checkQuery = "SHOW DATABASES LIKE 'e_report';";
-            rs = statement.executeQuery(checkQuery);
+        // Query to create the database if it does not exist
+        String createQuery = "CREATE DATABASE IF NOT EXISTS e_report;";
 
+        // Use try-with-resources to automatically close Connection, Statement, and
+        // ResultSet
+        try (Connection con = DriverManager.getConnection(
+                url,
+                AppConfig.DB_USERNAME,
+                AppConfig.DB_PASSWORD);
+                Statement statement = con.createStatement();
+                ResultSet rs = statement.executeQuery(checkQuery)) {
+
+            // If a result is returned, database exists
             if (rs.next()) {
-                System.out.println("Database e_report already exists!");
+                System.out.println("Database 'e_report' already exists!");
             } else {
-                query = "CREATE DATABASE IF NOT EXISTS e_report;";
-                statement.executeUpdate(query);
-                System.out.println("Database E_REPORT has been created!");
+                // Create the database
+                statement.executeUpdate(createQuery);
+                System.out.println("Database 'e_report' has been created!");
             }
 
         } catch (SQLException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (rs != null)
-                    rs.close();
-                if (statement != null)
-                    statement.close();
-                if (con != null)
-                    con.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            // Handle SQL errors
+            handleSQLException(e);
+            throw new RuntimeException("Failed to create database.", e);
+        }
+    }
+
+    /**
+     * Handles SQLExceptions by checking SQL State codes
+     * and printing readable error messages.
+     *
+     * Common SQL State Codes:
+     * 42000 - Syntax or permission error
+     * 28000 - Authentication error (invalid credentials)
+     * 08S01 - Database server unreachable or offline
+     *
+     * @param e the SQLException thrown during database operations
+     */
+    private static void handleSQLException(SQLException e) {
+        // Extract SQL state to classify the error
+        String sqlState = e.getSQLState();
+
+        // Determine error type and print appropriate message
+        switch (sqlState) {
+            case "42000":
+                System.err.println("ERROR: SQL syntax or permission issue.");
+                break;
+
+            case "28000":
+                System.err.println("ERROR: Invalid credentials.");
+                break;
+
+            case "08S01":
+                System.err.println("ERROR: Database server is offline.");
+                break;
+
+            default:
+                // Generic fallback for unexpected SQL errors
+                System.err.println("SQL ERROR: " + e.getMessage());
         }
 
+        // Print SQL state for debugging purposes
+        System.err.println("SQL State: " + sqlState);
     }
 }

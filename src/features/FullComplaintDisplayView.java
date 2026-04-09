@@ -189,7 +189,7 @@ public class FullComplaintDisplayView extends JFrame {
 
                 // Let's grab the very first pair returned (Index 0) to display in the UI Change
                 // the value here inside get method to change pairs
-                int[] firstPair = validIdsList.get(2);
+                int[] firstPair = validIdsList.get(1);
 
                 System.out.println(
                         "Rendering first found IDs -> User ID: " + firstPair[0] + ", Complaint ID: "

@@ -1,197 +1,145 @@
-
 package DAOs;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.sql.PreparedStatement;
 import java.sql.Statement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 
 import models.ComplaintAction;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 
 /**
- * Adding logic shall be the following:
- * addComplaint() -> addComplaintHistory() -> addComplaintAction
- * 
- * All methods in this Class
- * addComplaint(Connection con, int user_ID, ComplaintDetail cd);
- * addComplaintHistory(Connection con, int complaint_ID, ComplaintHistoryDetail
- * chd)
- * addComplaintAction(Connection con, int complaint_ID, ComplaintAction ca)
- * 
+ * DAO for adding complaints, complaint history, and actions.
+ * All methods throw SQLException on failure, making them
+ * safe to use in transactions.
  */
-
 public class AddComplaintDAO {
 
     /**
-     * This method is used to add complaint on complaint details table
-     * addComplaint();
+     * Adds a complaint and links it to a user.
      * 
-     * @params DB Connection, ComplaintDetail data
-     * @return none
+     * @param con    Active DB connection
+     * @param userID User ID filing the complaint
+     * @param cd     ComplaintDetail object
+     * @return Auto-generated ComplaintDetail ID
+     * @throws SQLException if insertion fails
      */
+    public static int addComplaint(Connection con, int userID, ComplaintDetail cd) throws SQLException {
+        String insertDetailSQL = "INSERT INTO Complaint_Detail "
+                + "(current_status, subject, type, date_time, street, purok, longitude, latitude, persons_involved, details, photo_attachment) "
+                + "VALUES (?,?,?,?,?,?,?,?,?,?,?);";
 
-    public static void addComplaint(Connection con, int user_ID, ComplaintDetail cd) {
-        String query1, query2;
-        int rows, cdID;
-        ResultSet rs;
-        PreparedStatement statement1 = null, statement2 = null;
+        try (PreparedStatement stmtDetail = con.prepareStatement(insertDetailSQL, Statement.RETURN_GENERATED_KEYS)) {
+            stmtDetail.setString(1, cd.getCurrentStatus());
+            stmtDetail.setString(2, cd.getSubject());
+            stmtDetail.setString(3, cd.getType());
+            stmtDetail.setTimestamp(4, cd.getDateTime());
+            stmtDetail.setString(5, cd.getStreet());
+            stmtDetail.setString(6, cd.getPurok());
+            stmtDetail.setDouble(7, cd.getLongitude());
+            stmtDetail.setDouble(8, cd.getLatitude());
+            stmtDetail.setString(9, cd.getPersonsInvolved());
+            stmtDetail.setString(10, cd.getDetails());
+            stmtDetail.setString(11, cd.getPhotoAttachment());
 
-        try {
-            query1 = "INSERT INTO Complaint_Detail (current_status, subject, type, date_time, street, purok, longitude, latitude, persons_involved, details, photo_attachment) VALUES (?,?,?,?,?,?,?,?,?,?,?);";
-            statement1 = con.prepareStatement(query1, Statement.RETURN_GENERATED_KEYS);
-            statement1.setString(1, cd.getCurrentStatus());
-            statement1.setString(2, cd.getSubject());
-            statement1.setString(3, cd.getType());
-            statement1.setTimestamp(4, cd.getDateTime());
-            statement1.setString(5, cd.getStreet());
-            statement1.setString(6, cd.getPurok());
-            statement1.setDouble(7, cd.getLongitude());
-            statement1.setDouble(8, cd.getLatitude());
-            statement1.setString(9, cd.getPersonsInvolved());
-            statement1.setString(10, cd.getDetails());
-            statement1.setString(11, cd.getPhotoAttachment());
+            int rows = stmtDetail.executeUpdate();
+            if (rows == 0)
+                throw new SQLException("Failed to insert Complaint_Detail");
 
-            rows = statement1.executeUpdate();
-            System.out.println(rows + " rows(s) inserted on Complaint_Detail");
+            try (ResultSet rs = stmtDetail.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int cdID = rs.getInt(1);
 
-            rs = statement1.getGeneratedKeys();
-            if (rs.next()) {
-                try {
-                    cdID = rs.getInt(1);
+                    String insertComplaintSQL = "INSERT INTO Complaint(CD_ID, UI_ID) VALUES(?,?);";
+                    try (PreparedStatement stmtComplaint = con.prepareStatement(insertComplaintSQL)) {
+                        stmtComplaint.setInt(1, cdID);
+                        stmtComplaint.setInt(2, userID);
+                        int complaintRows = stmtComplaint.executeUpdate();
+                        if (complaintRows == 0)
+                            throw new SQLException("Failed to insert Complaint");
+                    }
 
-                    query2 = "INSERT INTO Complaint(CD_ID, UI_ID) VALUES(?,?);";
-                    statement2 = con.prepareStatement(query2);
-                    statement2.setInt(1, cdID);
-                    statement2.setInt(2, user_ID);
-
-                    rows = statement2.executeUpdate();
-                    System.out.println(rows + " rows(s) inserted on Complaint");
-                } catch (SQLException e) {
-                    System.out.println("Insertion of Complaint failed ");
-                    e.printStackTrace();
+                    return cdID;
+                } else {
+                    throw new SQLException("Failed to retrieve generated ComplaintDetail ID");
                 }
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Insertion of Complaint_Detail failed ");
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement1 != null)
-                    statement1.close();
-                if (statement2 != null)
-                    statement2.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
         }
     }
 
     /**
-     * This method is used to update the status of a complaint by inserting details
-     * on complaint_history_detail
-     * addComplaintHistory();
+     * Adds complaint history linked to a complaint.
      * 
-     * @params DB Connection, Complaint_ID, ComplaintHistoryDetail data
-     * @return none
+     * @param con         Active DB connection
+     * @param complaintID Complaint ID to link
+     * @param chd         ComplaintHistoryDetail object
+     * @return Auto-generated ComplaintHistoryDetail ID
+     * @throws SQLException if insertion fails
      */
+    public static int addComplaintHistory(Connection con, int complaintID, ComplaintHistoryDetail chd)
+            throws SQLException {
+        String insertHistoryDetailSQL = "INSERT INTO Complaint_History_Detail "
+                + "(status, process, date_time_updated, updated_by) VALUES (?,?,?,?);";
 
-    public void addComplaintHistory(Connection con, int complaint_ID, ComplaintHistoryDetail chd) {
-        String query1, query2;
-        int rows, chdID;
-        ResultSet rs;
-        PreparedStatement statement1 = null, statement2 = null;
+        try (PreparedStatement stmtHistoryDetail = con.prepareStatement(insertHistoryDetailSQL,
+                Statement.RETURN_GENERATED_KEYS)) {
+            stmtHistoryDetail.setString(1, chd.getStatus());
+            stmtHistoryDetail.setString(2, chd.getProcess());
+            stmtHistoryDetail.setTimestamp(3, chd.getDateTimeUpdated());
+            stmtHistoryDetail.setString(4, chd.getUpdatedBy());
 
-        try {
-            query1 = "INSERT INTO Complaint_History_Detail(status, process, date_time_updated, updated_by) VALUES(?,?,?,?);";
-            statement1 = con.prepareStatement(query1, Statement.RETURN_GENERATED_KEYS);
-            statement1.setString(1, chd.getStatus());
-            statement1.setString(2, chd.getProcess());
-            statement1.setTimestamp(3, chd.getDateTimeUpdated());
-            statement1.setString(4, chd.getUpdatedBy());
+            int rows = stmtHistoryDetail.executeUpdate();
+            if (rows == 0)
+                throw new SQLException("Failed to insert Complaint_History_Detail");
 
-            rows = statement1.executeUpdate();
-            System.out.println(rows + " rows(s) inserted on Complaint_History_Detail");
+            try (ResultSet rs = stmtHistoryDetail.getGeneratedKeys()) {
+                if (rs.next()) {
+                    int chdID = rs.getInt(1);
 
-            rs = statement1.getGeneratedKeys();
-            if (rs.next()) {
-                try {
-                    chdID = rs.getInt(1);
+                    String insertHistorySQL = "INSERT INTO Complaint_History(CD_ID, CHD_ID) VALUES (?,?);";
+                    try (PreparedStatement stmtHistory = con.prepareStatement(insertHistorySQL)) {
+                        stmtHistory.setInt(1, complaintID);
+                        stmtHistory.setInt(2, chdID);
+                        int historyRows = stmtHistory.executeUpdate();
+                        if (historyRows == 0)
+                            throw new SQLException("Failed to insert Complaint_History");
+                    }
 
-                    query2 = "INSERT INTO Complaint_History(CD_ID, CHD_ID) VALUES(?,?);";
-                    statement2 = con.prepareStatement(query2);
-                    statement2.setInt(1, complaint_ID);
-                    statement2.setInt(2, chdID);
-
-                    rows = statement2.executeUpdate();
-                    System.out.println(rows + " rows(s) inserted on Complaint_History");
-                } catch (SQLException e) {
-                    System.out.println("Insertion of Complaint_History failed ");
-                    e.printStackTrace();
+                    return chdID;
+                } else {
+                    throw new SQLException("Failed to retrieve generated ComplaintHistoryDetail ID");
                 }
-            }
-
-            rs.close();
-
-        } catch (SQLException e) {
-            System.out.println("Insertion of Complaint_History_Detail failed ");
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement1 != null)
-                    statement1.close();
-                if (statement2 != null)
-                    statement2.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
             }
         }
     }
 
     /**
-     * This method is used to add the complaint action on the complaint
-     * addComplaintAction();
+     * Adds an action related to a complaint.
      * 
-     * @params DB Connection, Complaint_ID, ComplaintAction data
-     * @return none
+     * @param con         Active DB connection
+     * @param complaintID Complaint ID
+     * @param ca          ComplaintAction object
+     * @return true if insertion succeeds
+     * @throws SQLException if insertion fails
      */
-    public void addComplaintAction(Connection con, int complaint_ID, ComplaintAction ca) {
-        String query1;
-        int rows;
-        ResultSet rs;
-        PreparedStatement statement1 = null, statement2 = null;
+    public static boolean addComplaintAction(Connection con, int complaintID, ComplaintAction ca) throws SQLException {
+        String insertActionSQL = "INSERT INTO Complaint_Action "
+                + "(CD_ID, action_taken, recommendation, oic, resolution_date_time) VALUES (?,?,?,?,?);";
 
-        try {
-            query1 = "INSERT INTO Complaint_Action(CD_ID, action_taken, recommendation, oic, resolution_date_time) VALUES(?,?,?,?,?);";
-            statement1 = con.prepareStatement(query1, Statement.RETURN_GENERATED_KEYS);
-            statement1.setInt(1, complaint_ID);
-            statement1.setString(2, ca.getActionTaken());
-            statement1.setString(3, ca.getRecommendation());
-            statement1.setString(4, ca.getOIC());
-            statement1.setTimestamp(5, ca.getResolutionDateTime());
+        try (PreparedStatement stmtAction = con.prepareStatement(insertActionSQL, Statement.RETURN_GENERATED_KEYS)) {
+            stmtAction.setInt(1, complaintID);
+            stmtAction.setString(2, ca.getActionTaken());
+            stmtAction.setString(3, ca.getRecommendation());
+            stmtAction.setString(4, ca.getOIC());
+            stmtAction.setTimestamp(5, ca.getResolutionDateTime());
 
-            rows = statement1.executeUpdate();
-            System.out.println(rows + " rows(s) inserted on Complaint_Action");
+            int rows = stmtAction.executeUpdate();
+            if (rows == 0)
+                throw new SQLException("Failed to insert Complaint_Action");
 
-            rs = statement1.getGeneratedKeys();
-
-            rs.close();
-        } catch (SQLException e) {
-            System.out.println("Insertion of Complaint_Action failed ");
-
-            e.printStackTrace();
-        } finally {
-            try {
-                if (statement1 != null)
-                    statement1.close();
-                if (statement2 != null)
-                    statement2.close();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
+            return true;
         }
     }
 }

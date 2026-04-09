@@ -1,3 +1,253 @@
+Database Setup & Usage Guide
+This guide explains how to initialize and use the database for the application using the provided Java utility classes: DBConnection, DBCreate, and TBCreate.
+
+1. DBConnection
+   Purpose:
+   DBConnection is responsible for establishing a connection to the database using the credentials and configuration defined in AppConfig.
+
+2. DBCreate
+   Purpose:
+   DBCreate ensures the main database (e_report) exists. If it does not exist, it will automatically create it.
+
+3. TBCreate
+   Purpose:
+   TBCreate handles the creation of all required tables in the e_report database.
+
+Recommended Sequence for Setting Up the Database
+
+1. Connection con = DBConnection.connect();
+2. DBCreate.createDatabase();
+3. TBCreate.createTables(con);
+
+=========
+
+AddUserDAO Usage Guide
+This guide explains the process and requirements for adding new users and their corresponding credentials using the AddUserDAO class.
+
+1. addUser
+   Purpose:
+   The addUser method is responsible for inserting personal details into the User_Info table and retrieving the unique identifier for the new record.
+
+   Process:
+   Prepares an INSERT statement for the User_Info table.
+   Maps name, contact, and address data from the UserInfo object.
+   Retrieves the auto-generated ID (Primary Key) created by the database.
+
+   Parameters:
+   Connection con: An active link to the database.
+   UserInfo ui: The model object containing the user's personal details.
+
+   Return Value:
+   Returns the newly created User ID (int) if successful; returns -1 if the operation fails.
+
+2. addCredential
+   Purpose:
+   The addCredential method links login information (username, password, and role) to a specific profile using the ID generated in the previous step.
+
+   Process:
+
+   Maps the userID to the UI_ID foreign key column.
+   Inserts the account's security details and verification status.
+
+   Parameters:
+   Connection con: An active link to the database.
+   int userID: The ID returned from the addUser method.
+   Credential c: The model object containing login and role data.
+
+   Return Value:
+   Returns true if the credentials were saved successfully; false otherwise.
+
+AddComplaintDAO Usage Guide
+This guide explains the process and requirements for adding complaints, complaint history, and actions using the AddComplaintDAO class.
+
+1. addComplaint
+
+   Purpose:
+   The addComplaint method is responsible for inserting a new complaint into the database and linking it to a user.
+
+   Process:
+   Prepares an INSERT statement for the Complaint_Detail table.
+   Maps complaint information from the ComplaintDetail object (status, subject, type, location, etc.).
+   Executes the insertion and retrieves the auto-generated CD_ID.
+   Inserts a record in the Complaint table linking the complaint to the UI_ID of the user.
+
+   Parameters:
+   Connection con: An active link to the database.
+   int userID: The ID of the user filing the complaint.
+   ComplaintDetail cd: The model object containing complaint details.
+
+   Return Value:
+   Returns the generated CD_ID if successful; throws SQLException on failure.
+
+2. addComplaintHistory
+
+   Purpose:
+   The addComplaintHistory method records updates or progress of a complaint and links it to the corresponding complaint.
+
+   Process:
+   Prepares an INSERT statement for the Complaint_History_Detail table.
+   Maps status, process, update timestamp, and updatedBy from the ComplaintHistoryDetail object.
+   Inserts a record in the Complaint_History table linking CHD_ID to the complaint.
+
+   Parameters:
+   Connection con: An active database connection.
+   int complaintID: The CD_ID of the complaint to link the history to.
+   ComplaintHistoryDetail chd: The model object containing history data.
+
+   Return Value:
+   Returns the generated CHD_ID if successful; throws SQLException on failure.
+
+3. addComplaintAction
+
+   Purpose:
+   The addComplaintAction method logs the assigned actions, recommendations, or resolutions for a complaint.
+
+   Process:
+   Prepares an INSERT statement for the Complaint_Action table.
+   Maps action details including actionTaken, recommendation, OIC, and resolutionDateTime from the ComplaintAction object.
+   Executes the insertion to link the action to the complaint.
+
+   Parameters:
+   Connection con: An active database connection.
+   int complaintID: The CD_ID of the complaint.
+   ComplaintAction ca: The model object containing action details.
+
+   Return Value:
+   Returns true if the action was inserted successfully; throws SQLException on failure.
+
+GetComplaintDAO Usage Guide
+This guide explains how to retrieve complaint details, history, and actions using the GetComplaintDAO class.
+
+1. getComplaint
+
+   Purpose:
+   Retrieve a single complaint filed by a specific user.
+
+   Process:
+   Executes a SELECT query joining Complaint and Complaint_Detail tables.
+   Maps the result set to a ComplaintDetail object.
+
+   Parameters:
+   int UI_ID: User ID who filed the complaint.
+   int CD_ID: Complaint ID to retrieve.
+
+   Return Value:
+   Returns a ComplaintDetail object if found; otherwise, returns null.
+
+2. getAllComplaint
+
+   Purpose:
+   Retrieve all complaints filed by a specific user.
+
+   Process:
+   Executes a SELECT query joining Complaint and Complaint_Detail tables filtered by UI_ID.
+   Maps each result row to a ComplaintDetail object.
+
+   Parameters:
+   int UI_ID: User ID to filter complaints.
+
+   Return Value:
+   Returns a List<ComplaintDetail> containing all complaints for the user.
+
+3. getComplaintHistory
+
+   Purpose:
+   Retrieve all history updates for a specific complaint.
+
+   Process:
+   Executes a SELECT query joining Complaint_History and Complaint_History_Detail tables.
+   Maps each result row to a ComplaintHistoryDetail object.
+
+   Parameters:
+   int CD_ID: Complaint ID to retrieve history for.
+
+   Return Value:
+   Returns a List<ComplaintHistoryDetail>; empty list if none found.
+
+4. getComplaintAction
+
+   Purpose:
+   Retrieve action details linked to a specific complaint.
+
+   Process:
+
+   Executes a SELECT query on Complaint_Action table filtered by CD_ID.
+   Maps the result row to a ComplaintAction object.
+
+   Parameters:
+   int CD_ID: Complaint ID to retrieve action for.
+
+   Return Value:
+   Returns a ComplaintAction object if found; otherwise, returns null.
+
+GetUserDAO Usage Guide
+This guide explains how to retrieve user information and credentials using the GetUserDAO class.
+
+1. getUser
+
+   Purpose:
+   Retrieve the personal details of a user.
+
+   Process:
+   Executes a SELECT query on the User_Info table filtered by UI_ID.
+   Maps the result set to a UserInfo object.
+
+   Parameters:
+   int UI_ID: The ID of the user to retrieve.
+
+   Return Value:
+   Returns a UserInfo object if found; otherwise, returns null.
+
+2. getCredential
+
+   Purpose:
+   Retrieve login credentials for a user.
+
+   Process:
+   Executes a SELECT query on the Credential table joined with User_Info filtered by username and password.
+   Maps the result set to a Credential object.
+
+   Parameters:
+   String username: Username to search for.
+   String password: Password to match.
+
+   Return Value:
+   Returns a Credential object if the username and password match; otherwise, returns null.
+
+User Registration & Credential
+┌───────────────┐
+│ AddUserDAO │
+│ addUser() │
+│ addCredential() │
+└───────┬───────┘
+│
+▼
+User Retrieval
+┌───────────────┐
+│ GetUserDAO │
+│ getUser() │
+│ getCredential() │
+└───────┬───────┘
+│
+▼
+Complaint Handling
+┌───────────────┐
+│ AddComplaintDAO│
+│ addComplaint()│
+│ addComplaintHistory() │
+│ addComplaintAction() │
+└───────┬──────────────┘
+│
+▼
+Complaint Retrieval
+┌───────────────┐
+│ GetComplaintDAO│
+│ getComplaint()│
+│ getAllComplaint() │
+│ getComplaintHistory() │
+│ getComplaintAction() │
+└────────────────┘
+
 =========
 
 Data Flow
