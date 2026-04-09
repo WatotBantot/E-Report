@@ -105,7 +105,6 @@ Controllers
              complaint.setCurrentStatus("Pending");
              complaint.setSubject("Noise Complaint");
              complaint.setType("Community");
-             complaint.setHouseNum("123");
              complaint.setStreet("Main St");
              complaint.setPurok("Purok 3");
              complaint.setDetails("Loud music late at night.");
