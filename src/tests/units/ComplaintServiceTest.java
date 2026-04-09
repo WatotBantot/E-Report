@@ -13,7 +13,7 @@ import java.sql.Timestamp;
 
 import config.DBConnection;
 import models.ComplaintDetail;
-import services.controller.ComplaintService;
+import services.controller.ComplaintServiceController;
 
 public class ComplaintServiceTest {
 
@@ -22,7 +22,7 @@ public class ComplaintServiceTest {
     public static void main(String[] args) {
         System.out.println("===== STARTING COMPLAINT SERVICE CONTROLLER TEST =====\n");
 
-        ComplaintService service = new ComplaintService();
+        ComplaintServiceController service = new ComplaintServiceController();
         testAddComplaintWithRealImage(service);
 
         System.out.println("====================================================");
@@ -33,7 +33,7 @@ public class ComplaintServiceTest {
         }
     }
 
-    public static void testAddComplaintWithRealImage(ComplaintService service) {
+    public static void testAddComplaintWithRealImage(ComplaintServiceController service) {
         System.out.println("[TEST] Add Complaint via Service Controller (Real Image)");
 
         Connection con = DBConnection.connect();

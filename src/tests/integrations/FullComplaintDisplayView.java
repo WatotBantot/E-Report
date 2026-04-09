@@ -1,4 +1,4 @@
-package tests.units;
+package tests.integrations;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
