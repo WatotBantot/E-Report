@@ -57,7 +57,7 @@ public class AppConfig {
                 latitude DECIMAL(10,8) NOT NULL,
                 persons_involved TEXT NOT NULL,
                 details TEXT NOT NULL,
-                photo_attachment TEXT NOT NULL,
+                photo_attachment BLOB NOT NULL,
                 date_time_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
             );
             """;
