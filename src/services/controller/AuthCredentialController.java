@@ -20,7 +20,7 @@ import models.UserSession;
  * - Call authenticateUser() with the username and password.
  * - Returns null if the credentials are invalid or missing.
  */
-public class AuthCredential {
+public class AuthCredentialController {
 
     /**
      * Authenticates a user against the database credentials.
