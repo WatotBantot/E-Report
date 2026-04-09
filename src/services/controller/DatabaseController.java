@@ -1,7 +1,6 @@
 package services.controller;
 
 import java.sql.Connection;
-import java.sql.SQLException;
 
 import config.DBConnection;
 import config.DBCreate;
