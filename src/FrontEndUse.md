@@ -120,3 +120,101 @@ Controllers
          }
 
     }
+
+=========
+
+Utils
+
+3. ValidationUtil
+    Purpose:
+    Provides a centralized validation middleware for all frontend forms (Login, Register, Profile Update, etc.).
+    It ensures required fields are filled, input formats are correct, and user-friendly error messages are generated consistently across the system.
+
+    Responsibilities:
+    Validate required input fields (text and password fields)
+    Validate email format
+    Validate contact number format
+    Validate age constraints
+    Automatically detect missing inputs
+    Focus the first invalid field for better UX
+    Generate readable error messages for UI display
+
+    Usage Process:
+    Collect all form inputs from UI components
+    Pass fields into validation utility methods
+    Build error messages using StringBuilder
+    Stop process if validation fails
+    Proceed only if all inputs are valid
+
+    Parameters:
+    Map<JTextField, String> – Required text fields with labels for error messages
+    Map<JPasswordField, String> – Required password fields with labels
+    String email – Email input string
+    String contact – Contact number string
+    StringBuilder error – Container for validation error messages
+    Return Value:
+    true – If validation fails (errors exist)
+    false – If all inputs are valid
+
+    Core Methods:
+    1. requireFields()
+    Validates if JTextField inputs are empty.
+
+    2. requirePasswordFields()
+    Validates if JPasswordField inputs are empty.
+
+    3. validateEmailField()
+    Checks if email is:
+    not empty
+    in correct format
+
+    4. validateContactField()
+    Checks if contact number:
+    not empty
+    follows PH format (09xxxxxxxxx or 08xxxxxxxxx)
+
+    5. isValidEmail()
+    Returns boolean result for email regex validation.
+
+    6. isValidContact()
+    Returns boolean result for contact number validation.
+
+    7. isValidAge()
+    Checks if age is within valid range (0–200).
+
+    EXAMPLE USAGE
+    import services.middleware.ValidationUtil;
+    import javax.swing.*;
+    import java.util.LinkedHashMap;
+    import java.util.Map;
+
+    public class RegisterForm {
+
+        public static void main(String[] args) {
+
+            JTextField txtEmail = new JTextField("user@gmail.com");
+            JTextField txtContact = new JTextField("09123456789");
+
+            StringBuilder errors = new StringBuilder("Please fix the following:\n");
+
+            Map<JTextField, String> fields = new LinkedHashMap<>();
+            fields.put(txtEmail, "Email");
+            fields.put(txtContact, "Contact Number");
+
+            boolean hasError = ValidationUtil.requireFields(fields, errors);
+
+            // Format validations
+            ValidationUtil.validateEmailField(txtEmail.getText(), errors);
+            ValidationUtil.validateContactField(txtContact.getText(), errors);
+
+            if (hasError || errors.length() > "Please fix the following:\n".length()) {
+                JOptionPane.showMessageDialog(null,
+                        errors.toString(),
+                        "Validation Error",
+                        JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+
+            System.out.println("Register validation passed!");
+        }
+    }

@@ -76,6 +76,7 @@ public class HomepageUI extends JPanel {
         buttonPanel.add(btnRegister);
 
         btnLogin.addActionListener(e -> app.navigate("login"));
+        btnRegister.addActionListener(e -> app.navigate("register"));
 
         gbc.gridy = 3;
         bgPanel.add(buttonPanel, gbc);
