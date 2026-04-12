@@ -6,7 +6,10 @@ import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import java.util.ArrayList;
+import java.util.List;
 
+import models.*;
 import config.UIConfig;
 import features.ui.HomepageUI;
 import features.ui.LoginUI;
@@ -17,7 +20,16 @@ public class E_Report extends JFrame {
     private CardLayout cardLayout;
     private JPanel container;
 
+    private UserSession us;
+    private UserInfo ui;
+    private Credential cred;
+    private ComplaintDetail cd;
+    private List<ComplaintDetail> cdList;
+
     public E_Report() {
+        // Initialize Database
+        DatabaseController.initializeDatabase();
+
         setTitle("Barangay Malacañang E-Reporting System");
         setIconImage(new ImageIcon(getClass().getResource("/assets/barangay_logo.png")).getImage());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -34,7 +46,7 @@ public class E_Report extends JFrame {
 
         add(container);
 
-        cardLayout.show(container, "register");
+        cardLayout.show(container, "home");
         setVisible(true);
     }
 
@@ -45,11 +57,9 @@ public class E_Report extends JFrame {
         // 2. Decide which "Canvas" to load
         if (route.equalsIgnoreCase("login")) {
             add(new LoginUI(this));
-        } 
-        else if (route.equalsIgnoreCase("home")) {
+        } else if (route.equalsIgnoreCase("home")) {
             add(new HomepageUI(this));
-        }
-        else if (route.equalsIgnoreCase("register")) {
+        } else if (route.equalsIgnoreCase("register")) {
             add(new RegisterUI(this));
         }
 
@@ -58,10 +68,23 @@ public class E_Report extends JFrame {
         repaint();
     }
 
-    public static void main(String[] args) {
-        // Initialize Database
-        DatabaseController.initializeDatabase();
+    public void setUserSession(UserSession us) {
+        this.us = us;
+    }
 
+    public UserSession getUserSession() {
+        return us;
+    }
+
+    public void setUserInfo(UserInfo ui){
+        this.ui = ui;
+    }
+
+    public UserInfo getUserInfo(){
+        return ui;
+    }
+
+    public static void main(String[] args) {
         SwingUtilities.invokeLater(E_Report::new);
     }
 
