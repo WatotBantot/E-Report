@@ -1,12 +1,13 @@
 package DAOs;
 
+import models.Credential;
+import models.UserInfo;
 import config.DBConnection;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import models.Credential;
-import models.UserInfo;
 
 /**
  * Data Access Object (DAO) for retrieving users and credentials from the
@@ -81,7 +82,7 @@ public class GetUserDAO {
      */
     public Credential getCredential(String username, String password) {
         String query = """
-                SELECT Credential.UI_ID, username, password, role, is_verified
+                SELECT Credential.UI_ID, username, password
                 FROM Credential
                 INNER JOIN User_Info ON Credential.UI_ID = User_Info.UI_ID
                 WHERE username = ? AND password = ?;
@@ -101,8 +102,6 @@ public class GetUserDAO {
                     c.setUI_ID(rs.getInt("UI_ID"));
                     c.setUsername(rs.getString("username"));
                     c.setPassword(rs.getString("password"));
-                    c.setRole(rs.getString("role"));
-                    c.setIsVerified(rs.getBoolean("is_verified"));
                     return c;
                 }
             }

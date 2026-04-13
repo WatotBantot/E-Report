@@ -1,17 +1,18 @@
 package app;
 
-import config.UIConfig;
-import features.submit.SubmitReportView;
-import features.ui.HomepageUI;
-import features.ui.LoginUI;
-import features.ui.RegisterUI;
 import java.awt.CardLayout;
-import java.util.List;
+
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
+import java.util.List;
+
 import models.*;
+import config.UIConfig;
+import features.ui.HomepageUI;
+import features.ui.LoginUI;
+import features.ui.RegisterUI;
 import services.controller.DatabaseController;
 
 public class E_Report extends JFrame {
@@ -59,17 +60,6 @@ public class E_Report extends JFrame {
             add(new HomepageUI(this));
         } else if (route.equalsIgnoreCase("register")) {
             add(new RegisterUI(this));
-        } else if (route.equalsIgnoreCase("submitreport")) {
-            // Navigate to SubmitReportView after successful login
-            if (us != null) {
-                SwingUtilities.invokeLater(() -> {
-                    SubmitReportView reportView = new SubmitReportView(us);
-                    reportView.setVisible(true);
-                });
-                // Dispose the main window after opening the report view
-                SwingUtilities.invokeLater(this::dispose);
-                return;
-            }
         }
 
         // 3. Tell Swing to redraw the window

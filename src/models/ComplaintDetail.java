@@ -4,14 +4,13 @@ import java.sql.Timestamp;
 
 public class ComplaintDetail {
     private String currentStatus, subject, type, street, purok, personsInvolved, details;
-    private String photoAttachment;
     private byte[] photoAttachmentBytes;
     private Timestamp dateTime;
     private double longitude, latitude;
 
     public ComplaintDetail(String currentStatus, String subject, String type, Timestamp dateTime, double longitude,
             double latitude, String street, String purok, String personsInvolved, String details,
-            String photoAttachment) {
+            byte[] photoAttachmentBytes) {
 
         this.currentStatus = currentStatus;
         this.subject = subject;
@@ -23,7 +22,7 @@ public class ComplaintDetail {
         this.purok = purok;
         this.personsInvolved = personsInvolved;
         this.details = details;
-        this.photoAttachment = photoAttachment;
+        this.photoAttachmentBytes = photoAttachmentBytes;
     }
 
     public ComplaintDetail() {
@@ -109,22 +108,12 @@ public class ComplaintDetail {
         this.details = details;
     }
 
-    public String getPhotoAttachment() {
-        return photoAttachment;
-    }
-
-    public void setPhotoAttachment(String photoAttachment) {
-        this.photoAttachment = photoAttachment;
-        this.photoAttachmentBytes = null;
-    }
-
     public byte[] getPhotoAttachmentBytes() {
         return photoAttachmentBytes;
     }
 
-    public void setPhotoAttachmentBytes(byte[] photoAttachmentBytes) {
-        this.photoAttachmentBytes = photoAttachmentBytes;
-        this.photoAttachment = null;
+    public void setPhotoAttachmentBytes(byte[] photoAttachment) {
+        this.photoAttachmentBytes = photoAttachment;
     }
 
 }

@@ -40,7 +40,7 @@ import features.ui.DashboardHeaderPanel;
 import features.ui.DashboardSidebarPanel;
 import models.ComplaintDetail;
 import models.UserSession;
-import services.controller.ComplaintService;
+import services.controller.ComplaintServiceController;
 
 public class SubmitReportView extends JFrame {
 
@@ -404,7 +404,7 @@ public class SubmitReportView extends JFrame {
     private void submitComplaint() {
         try {
             ComplaintDetail complaint = buildComplaintFromForm();
-            ComplaintService service = new ComplaintService();
+            ComplaintServiceController service = new ComplaintServiceController();
             service.addComplaint(getCurrentUserId(), complaint, selectedFile);
             JOptionPane.showMessageDialog(this, "Complaint submitted successfully.");
             clearForm();

@@ -1,12 +1,13 @@
 package services.controller;
 
-import DAOs.AddComplaintDAO;
-import config.DBConnection;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
+
+import DAOs.AddComplaintDAO;
+import config.DBConnection;
 import models.ComplaintDetail;
 
 /**
@@ -95,36 +96,26 @@ public class ComplaintServiceController {
     /**
      * Processes and attaches an image file to the ComplaintDetail object.
      * 
-     * Reads the file and saves it to the images directory, then stores the file path
-     * in the ComplaintDetail object for database storage.
+     * This method reads the file into a byte array and assigns it to a BLOB field
+     * in the ComplaintDetail object. This allows the image to be stored directly
+     * in the database.
      * 
      * @param cd          The ComplaintDetail object to attach the image to.
-     * @param droppedFile The image file to process and attach.
+     * @param droppedFile The image file to read and attach.
      */
     public void processAndAttachImage(ComplaintDetail cd, File droppedFile) {
         try {
-            // Save uploads under the local project images folder.
-            String directory = System.getProperty("user.dir") + File.separator + "images" + File.separator;
-            String newFileName = System.currentTimeMillis() + "_" + droppedFile.getName();
-            File destination = new File(directory + newFileName);
+            // Convert the file into a byte array
+            byte[] fileBytes = Files.readAllBytes(droppedFile.toPath());
 
-            // Ensure the directory physically exists on the computer
-            File dir = new File(directory);
-            if (!dir.exists()) {
-                dir.mkdirs(); // Creates the folder if it's missing
-            }
+            // Attach the byte array to the ComplaintDetail model
+            cd.setPhotoAttachmentBytes(fileBytes); // Ensure this field exists in the model
 
-            // Copy the file to the images directory
-            Files.copy(droppedFile.toPath(), destination.toPath());
-
-            // Save the file path into the model
-            cd.setPhotoAttachment(destination.getAbsolutePath());
-
-            System.out.println("Image successfully attached and saved to: " + destination.getAbsolutePath());
+            System.out.println("Image successfully read and attached as BLOB: " + droppedFile.getName());
 
         } catch (IOException e) {
-            // File read/write failure
-            System.err.println("Failed to process the image file!");
+            // File read failure
+            System.err.println("Failed to read the image file!");
             e.printStackTrace();
         }
     }
