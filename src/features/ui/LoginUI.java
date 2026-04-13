@@ -1,14 +1,14 @@
 package features.ui;
 
-import app.E_Report;
+import javax.swing.*;
+import java.awt.*;
 import config.UIConfig;
 import features.components.*;
-import java.awt.*;
-import java.util.List;
-import javax.swing.*;
 import models.UserSession;
 import services.controller.AuthCredentialController;
+import app.E_Report;
 import services.middleware.UIValidator;
+import java.util.List;
 
 public class LoginUI extends JPanel {
     private E_Report app;
@@ -154,7 +154,7 @@ public class LoginUI extends JPanel {
 
             if (session != null) {
                 app.setUserSession(session);
-                app.navigate("submitreport");
+                app.navigate("home");
             } else {
                 JOptionPane.showMessageDialog(this,
                         "Credential has no match. Ensure that the username and password are correct",
