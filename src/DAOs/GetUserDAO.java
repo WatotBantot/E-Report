@@ -2,7 +2,6 @@ package DAOs;
 
 import models.Credential;
 import models.UserInfo;
-import config.DBConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,99 +17,107 @@ import java.sql.SQLException;
  * - Credential details by username and password
  */
 public class GetUserDAO {
+	
+	// ===== SQL STRINGS =====
+	private String queryUser, queryCredential;
+	
+	public GetUserDAO(){
+		// ===== INIT SQL =====
+		queryUser = """
+			SELECT UI_ID, first_name, middle_name, last_name, sex,
+				contact_number, email_address, house_number, street, purok
+			FROM User_Info
+			WHERE UI_ID = ?;
+			""";
+			
+		queryCredential = """
+			SELECT Credential.UI_ID, username, password
+			FROM Credential
+			INNER JOIN User_Info ON Credential.UI_ID = User_Info.UI_ID
+			WHERE username = ? AND password = ?;
+			""";
+	}
 
-    /**
-     * Retrieves a {@link UserInfo} object by user ID.
-     *
-     * Process:
-     * - Executes a SELECT query on User_Info table
-     * - Maps the result set to a UserInfo object
-     *
-     * @param UI_ID the ID of the user to retrieve
-     * @return a populated {@link UserInfo} object if found, null otherwise
-     */
-    public UserInfo getUser(int UI_ID) {
-        String query = """
-                SELECT UI_ID, first_name, middle_name, last_name, sex,
-                       contact_number, email_address, house_number, street, purok
-                FROM User_Info
-                WHERE UI_ID = ?;
-                """;
+	/**
+	 * Retrieves a {@link UserInfo} object by user ID.
+	 *
+	 * Process:
+	 * - Executes a SELECT query on User_Info table
+	 * - Maps the result set to a UserInfo object
+	 *
+	 * @param UI_ID the ID of the user to retrieve
+	 * @return a populated {@link UserInfo} object if found, null otherwise
+	 */
+	public UserInfo getUser(Connection con, int UI_ID) {
+		// ===== GET USER =====
+		try (con;
+				PreparedStatement stmt = con.prepareStatement(queryUser)) {
 
-        // Use try-with-resources for automatic connection and statement closing
-        try (Connection con = DBConnection.connect();
-                PreparedStatement stmt = con.prepareStatement(query)) {
+			stmt.setInt(1, UI_ID);
 
-            stmt.setInt(1, UI_ID); // Set user ID parameter
+			// ===== EXECUTE QUERY =====
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					// ===== MAP TO USERINFO =====
+					UserInfo ui = new UserInfo();
+					ui.setUI_ID(rs.getInt("UI_ID"));
+					ui.setFName(rs.getString("first_name"));
+					ui.setMName(rs.getString("middle_name"));
+					ui.setLName(rs.getString("last_name"));
+					ui.setSex(rs.getString("sex"));
+					ui.setContact(rs.getString("contact_number"));
+					ui.setEmail(rs.getString("email_address"));
+					ui.setHouseNum(rs.getString("house_number"));
+					ui.setStreet(rs.getString("street"));
+					ui.setPurok(rs.getString("purok"));
+					return ui;
+				}
+			}
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    // Map ResultSet to UserInfo object
-                    UserInfo ui = new UserInfo();
-                    ui.setUI_ID(rs.getInt("UI_ID"));
-                    ui.setFName(rs.getString("first_name"));
-                    ui.setMName(rs.getString("middle_name"));
-                    ui.setLName(rs.getString("last_name"));
-                    ui.setSex(rs.getString("sex"));
-                    ui.setContact(rs.getString("contact_number"));
-                    ui.setEmail(rs.getString("email_address"));
-                    ui.setHouseNum(rs.getString("house_number"));
-                    ui.setStreet(rs.getString("street"));
-                    ui.setPurok(rs.getString("purok"));
-                    return ui;
-                }
-            }
+		} catch (SQLException e) {
+			System.err.println("Error retrieving user info from User_Info table");
+			System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
+		}
 
-        } catch (SQLException e) {
-            System.err.println("Error retrieving user info from User_Info table");
-            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
-        }
+		return null;
+	}
 
-        return null; // Return null if not found or on error
-    }
+	/**
+	 * Retrieves a {@link Credential} object by username and password.
+	 *
+	 * Process:
+	 * - Executes a SELECT query on Credential table joined with User_Info
+	 * - Maps the result set to a Credential object
+	 *
+	 * @param username the username to search for
+	 * @param password the password to match
+	 * @return a populated {@link Credential} object if found, null otherwise
+	 */
+	public Credential getCredential(Connection con, String username, String password) {
+		// ===== GET CREDENTIAL =====
+		try (con;
+				PreparedStatement stmt = con.prepareStatement(queryCredential)) {
 
-    /**
-     * Retrieves a {@link Credential} object by username and password.
-     *
-     * Process:
-     * - Executes a SELECT query on Credential table joined with User_Info
-     * - Maps the result set to a Credential object
-     *
-     * @param username the username to search for
-     * @param password the password to match
-     * @return a populated {@link Credential} object if found, null otherwise
-     */
-    public Credential getCredential(String username, String password) {
-        String query = """
-                SELECT Credential.UI_ID, username, password
-                FROM Credential
-                INNER JOIN User_Info ON Credential.UI_ID = User_Info.UI_ID
-                WHERE username = ? AND password = ?;
-                """;
+			stmt.setString(1, username);
+			stmt.setString(2, password);
 
-        try (Connection con = DBConnection.connect();
-                PreparedStatement stmt = con.prepareStatement(query)) {
+			// ===== EXECUTE QUERY =====
+			try (ResultSet rs = stmt.executeQuery()) {
+				if (rs.next()) {
+					// ===== MAP TO CREDENTIAL =====
+					Credential c = new Credential();
+					c.setUI_ID(rs.getInt("UI_ID"));
+					c.setUsername(rs.getString("username"));
+					c.setPassword(rs.getString("password"));
+					return c;
+				}
+			}
 
-            // Set parameters for username and password
-            stmt.setString(1, username);
-            stmt.setString(2, password);
+		} catch (SQLException e) {
+			System.err.println("Error retrieving credential from Credential table");
+			System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
+		}
 
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    // Map ResultSet to Credential object
-                    Credential c = new Credential();
-                    c.setUI_ID(rs.getInt("UI_ID"));
-                    c.setUsername(rs.getString("username"));
-                    c.setPassword(rs.getString("password"));
-                    return c;
-                }
-            }
-
-        } catch (SQLException e) {
-            System.err.println("Error retrieving credential from Credential table");
-            System.err.println("SQL State: " + e.getSQLState() + " - " + e.getMessage());
-        }
-
-        return null; // Return null if not found or on error
-    }
+		return null;
+	}
 }

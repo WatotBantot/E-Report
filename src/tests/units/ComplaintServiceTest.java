@@ -75,7 +75,7 @@ public class ComplaintServiceTest {
                     "while I went inside to secure a permit at around 2:30 PM today. When I came out " +
                     "at around 3:00 PM, the bike was gone. The lock was cut and left on the ground. " +
                     "The CCTV in the area might have captured the incident.");
-            cd.setCurrentStatus("Pending");
+            cd.setCurrentStatus("In progress");
             cd.setDateTime(new Timestamp(System.currentTimeMillis()));
             cd.setStreet("Rizal Street");
             cd.setPurok("Purok 4");

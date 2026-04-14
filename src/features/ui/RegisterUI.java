@@ -7,7 +7,7 @@ import features.components.*;
 import models.Credential;
 import models.UserInfo;
 import app.E_Report;
-import services.controller.UserService;
+import services.controller.UserServiceController;
 import services.middleware.UIValidator;
 import java.util.List;
 
@@ -250,7 +250,7 @@ public class RegisterUI extends JPanel {
 
             ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, street, purok);
             cred = new Credential(username, password);
-            UserService userService = new UserService();
+            UserServiceController userService = new UserServiceController();
             String result = userService.registerUser(ui, cred);
 
             if ("SUCCESS".equals(result)) {

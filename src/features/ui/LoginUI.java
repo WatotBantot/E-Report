@@ -150,7 +150,8 @@ public class LoginUI extends JPanel {
             password = txtPass.getValue();
 
             // 4. Authenticate
-            UserSession session = AuthCredentialController.authenticateUser(username, password);
+            AuthCredentialController acc = new AuthCredentialController();
+            UserSession session = acc.authenticateUser(username, password);
 
             if (session != null) {
                 app.setUserSession(session);
