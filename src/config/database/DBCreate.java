@@ -1,10 +1,11 @@
-package config;
+package config.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import config.AppConfig;
 
 /**
  * Utility class responsible for creating the database if it does not exist.

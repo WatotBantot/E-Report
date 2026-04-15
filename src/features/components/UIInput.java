@@ -8,7 +8,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import java.awt.*;
 import config.UIConfig;
-import services.middleware.UIValidator;
+import services.validation.UIValidator;
 
 public class UIInput extends JTextField {
     private String placeholder;
@@ -39,12 +39,11 @@ public class UIInput extends JTextField {
     public UIInput(int columns, String iconPath) {
         this(columns);
         if (iconPath != null) {
-            this.icon = new ImageIcon(new ImageIcon(iconPath).getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH));
+            this.icon = new ImageIcon(new ImageIcon(iconPath).getImage()
+                .getScaledInstance(18, 18, Image.SCALE_SMOOTH));
             applyPadding(36);
         }
     }
-
-    // --- CRITICAL METHODS ---
 
     public UIValidator.FieldType getFieldType() { return fieldType; }
     public void setFieldType(UIValidator.FieldType type) { this.fieldType = type; }
@@ -81,6 +80,13 @@ public class UIInput extends JTextField {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, 
+            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, 
+            RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+            RenderingHints.VALUE_ANTIALIAS_ON);
+            
         g2.setColor(getBackground());
         g2.fillRoundRect(0, 0, getWidth()-1, getHeight()-1, cornerRadius, cornerRadius);
 

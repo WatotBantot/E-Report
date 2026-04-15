@@ -1,7 +1,7 @@
 package tests.units;
 
-import config.DBConnection;
-import DAOs.AddComplaintDAO;
+import config.database.DBConnection;
+import daos.AddComplaintDAO;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.ComplaintAction;
@@ -85,7 +85,8 @@ public class AddComplaintDAOTest {
             int dummyUserId = 1;
 
             // 5. Run the target code
-            AddComplaintDAO.addComplaint(con, dummyUserId, cd);
+            AddComplaintDAO acDao = new AddComplaintDAO();
+            acDao.addComplaint(con, dummyUserId, cd);
 
             // 6. Check the row count again
             int afterCount = getTableRowCount(con, "COMPLAINT_DETAIL");
@@ -127,7 +128,8 @@ public class AddComplaintDAOTest {
 
             int dummyComplaintId = 1;
 
-            AddComplaintDAO.addComplaintHistory(con, dummyComplaintId, chd);
+            AddComplaintDAO acDao = new AddComplaintDAO();
+            acDao.addComplaintHistory(con, dummyComplaintId, chd);
 
             int afterCount = getTableRowCount(con, "Complaint_History_Detail");
 
@@ -162,7 +164,8 @@ public class AddComplaintDAOTest {
 
             int dummyComplaintId = 1;
 
-            AddComplaintDAO.addComplaintAction(con, dummyComplaintId, ca);
+            AddComplaintDAO acDao = new AddComplaintDAO();
+            acDao.addComplaintAction(con, dummyComplaintId, ca);
 
             int afterCount = getTableRowCount(con, "Complaint_Action");
 

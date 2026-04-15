@@ -1,8 +1,9 @@
-package config;
+package config.database;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import config.AppConfig;
 
 /**
  * Utility class responsible for creating database connections.

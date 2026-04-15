@@ -1,7 +1,6 @@
 package app;
 
 import java.awt.CardLayout;
-
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -10,9 +9,10 @@ import java.util.List;
 
 import models.*;
 import config.UIConfig;
-import features.ui.HomepageUI;
-import features.ui.LoginUI;
-import features.ui.RegisterUI;
+import features.views.DashboardView;
+import features.views.HomepageView;
+import features.views.LoginView;
+import features.views.RegisterView;
 import services.controller.DatabaseController;
 
 public class E_Report extends JFrame {
@@ -30,7 +30,7 @@ public class E_Report extends JFrame {
         DatabaseController.initializeDatabase();
 
         setTitle("Barangay Malacañang E-Reporting System");
-        setIconImage(new ImageIcon(getClass().getResource("/assets/barangay_logo.png")).getImage());
+        setIconImage(new ImageIcon(getClass().getResource("/assets/images/barangay_logo.png")).getImage());
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(UIConfig.WIDTH, UIConfig.HEIGHT);
         setResizable(false);
@@ -39,13 +39,14 @@ public class E_Report extends JFrame {
         cardLayout = new CardLayout();
         container = new JPanel(cardLayout);
 
-        container.add(new HomepageUI(this), "home");
-        container.add(new LoginUI(this), "login");
-        container.add(new RegisterUI(this), "register");
+        container.add(new HomepageView(this), "home");
+        container.add(new LoginView(this), "login");
+        container.add(new RegisterView(this), "register");
+        container.add(new DashboardView(this), "dashboard");
 
         add(container);
 
-        cardLayout.show(container, "home");
+        cardLayout.show(container, "dashboard");
         setVisible(true);
     }
 
@@ -55,11 +56,13 @@ public class E_Report extends JFrame {
 
         // 2. Decide which "Canvas" to load
         if (route.equalsIgnoreCase("login")) {
-            add(new LoginUI(this));
+            add(new LoginView(this));
         } else if (route.equalsIgnoreCase("home")) {
-            add(new HomepageUI(this));
+            add(new HomepageView(this));
         } else if (route.equalsIgnoreCase("register")) {
-            add(new RegisterUI(this));
+            add(new RegisterView(this));
+        } else if (route.equalsIgnoreCase("dashboard")) {
+            add(new DashboardView(this));
         }
 
         // 3. Tell Swing to redraw the window

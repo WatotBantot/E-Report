@@ -22,8 +22,8 @@ import javax.swing.JTextArea;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
-import DAOs.GetComplaintDAO;
-import config.DBConnection;
+import daos.GetComplaintDAO;
+import config.database.DBConnection;
 import models.ComplaintDetail;
 
 public class FullComplaintDisplayView extends JFrame {
@@ -106,7 +106,7 @@ public class FullComplaintDisplayView extends JFrame {
         ComplaintDetail cd = null;
 
         try {
-            cd = dao.getComplaint(userId, complaintId);
+            cd = dao.getComplaint(DBConnection.connect(), userId, complaintId);
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this,
                     "❌ Database connection failed or error occurred:\n" + e.getMessage(),

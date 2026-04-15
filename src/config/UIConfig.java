@@ -7,8 +7,8 @@ public class UIConfig {
     // =========================
     // PATHS
     // =========================
-    public static final String LOGO_PATH = "src/assets/barangay_logo.png";
-    public static final String BACKGROUND_PATH = "src/assets/background1.png";
+    public static final String LOGO_PATH = "src/assets/images/barangay_logo.png";
+    public static final String BACKGROUND_PATH = "src/assets/images/background1.png";
 
     // =========================
     // WINDOW
@@ -24,10 +24,33 @@ public class UIConfig {
     // =========================
     // ICONS
     // =========================
-    public static final String USER_ICON_PATH = "src/assets/circle-user.png";
-    public static final String LOCK_ICON_PATH = "src/assets/lock.png";
-    public static final String EYE_ICON_PATH = "src/assets/eye.png";
-    public static final String EYE_OFF_ICON_PATH = "src/assets/eye-off.png";
+    public static final String USER_ICON_PATH = "src/assets/icons/circle_user_icon.png";
+    public static final String LOCK_ICON_PATH = "src/assets/icons/lock_icon.png";
+    public static final String EYE_ICON_PATH = "src/assets/icons/eye_icon.png";
+    public static final String EYE_OFF_ICON_PATH = "src/assets/icons/eye_off_icon.png";
+    public static final String[] STAT_ICON_PATHS = {
+        "src/assets/icons/total_report_icon.png",
+        "src/assets/icons/pending_icon.png",
+        "src/assets/icons/in_progress_icon.png",
+        "src/assets/icons/resolved_icon.png"
+    };
+    public static final String[] STAT_LABEL_PATHS = {
+        "Total Reports", "Pending", "In Progress", "Resolved"
+    };
+
+    public static String[] NAV_ICON_PATHS = {
+        "src/assets/icons/dashboard_icon.png",
+        "src/assets/icons/reports_icon.png", 
+        "src/assets/icons/submit_icon.png",
+        "src/assets/icons/users_icon.png",
+        "src/assets/icons/circle_user_icon.png",
+        "src/assets/icons/logout_icon.png"
+    };
+
+    public static String[] NAV_ICON_LABELS = {
+        "Dashboard", "My Reports", "Submit Report",
+        "Users", "Profile", "Logout"
+    };
 
     // =========================
     // FONTS
@@ -77,6 +100,13 @@ public class UIConfig {
     public static final Color TEXT_SECONDARY = new Color(60, 60, 60);
 
     public static final Color BG_LIGHT = new Color(245, 247, 250);
+
+    public static final Color[] STAT_COLORS = {
+        new Color(100, 150, 255, 220),   // Blue with transparency
+        new Color(255, 200, 100, 220),   // Gold with transparency
+        new Color(200, 100, 255, 220),   // Purple with transparency
+        new Color(100, 200, 100, 220)    // Green with transparency
+    };
 
     // =========================
     // OUTLINED BUTTON CONFIG

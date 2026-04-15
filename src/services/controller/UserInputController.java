@@ -2,7 +2,7 @@ package services.controller;
 
 import javax.swing.*;
 
-import services.middleware.ValidationUtil;
+import services.validation.ValidationUtil;
 
 public class UserInputController {
 

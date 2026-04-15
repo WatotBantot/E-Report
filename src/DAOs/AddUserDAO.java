@@ -1,4 +1,4 @@
-package DAOs;
+package daos;
 
 import java.sql.*;
 import config.AppConfig;

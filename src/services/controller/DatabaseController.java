@@ -2,9 +2,9 @@ package services.controller;
 
 import java.sql.Connection;
 
-import config.DBConnection;
-import config.DBCreate;
-import config.TBCreate;
+import config.database.DBConnection;
+import config.database.DBCreate;
+import config.database.TBCreate;
 
 /**
  * DatabaseController

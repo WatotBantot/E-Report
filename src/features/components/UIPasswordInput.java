@@ -5,7 +5,7 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.*;
 import config.UIConfig;
-import services.middleware.UIValidator;
+import services.validation.UIValidator;
 
 public class UIPasswordInput extends JPasswordField {
 
@@ -18,10 +18,7 @@ public class UIPasswordInput extends JPasswordField {
 
     private UIValidator.FieldType fieldType = UIValidator.FieldType.TEXT;
 
-    public enum ValidationState {
-        IDLE, INVALID, VALID
-    }
-
+    public enum ValidationState { IDLE, INVALID, VALID }
     private ValidationState state = ValidationState.IDLE;
 
     public UIPasswordInput(int columns) {
@@ -33,37 +30,44 @@ public class UIPasswordInput extends JPasswordField {
         setOpaque(false);
         applyPadding();
 
+        // Load icons with simple scaling
         try {
             this.lockIcon = scaleIcon(UIConfig.LOCK_ICON_PATH);
             this.eyeOnIcon = scaleIcon(UIConfig.EYE_ICON_PATH);
-            this.eyeOffIcon = scaleIcon(UIConfig.EYE_OFF_ICON_PATH);
+            this.eyeOffIcon = scaleIcon(UIConfig.EYE_OFF_ICON_PATH);            
             paddingLeft = 36;
             paddingRight = 36;
             applyPadding();
-        } catch (Exception e) {
-        }
+        } catch (Exception e) {}
 
         getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
-            public void insertUpdate(javax.swing.event.DocumentEvent e) {
-                validateLive();
-            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { validateLive(); }
+        });
 
-            public void removeUpdate(javax.swing.event.DocumentEvent e) {
-                validateLive();
-            }
-
-            public void changedUpdate(javax.swing.event.DocumentEvent e) {
-                validateLive();
+        addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                setCursor(isOverEyeIcon(e.getX()) ? new Cursor(Cursor.HAND_CURSOR) : new Cursor(Cursor.TEXT_CURSOR));
             }
         });
 
         addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (e.getX() > getWidth() - 40)
-                    togglePasswordVisibility();
+                if (isOverEyeIcon(e.getX())) togglePasswordVisibility();
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent e) {
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
             }
         });
+    }
+
+    private boolean isOverEyeIcon(int mouseX) {
+        return mouseX > getWidth() - 40;
     }
 
     public void setMatchTarget(UIPasswordInput other) {
@@ -72,26 +76,15 @@ public class UIPasswordInput extends JPasswordField {
 
     private void validateLive() {
         String value = getValue();
-        if (value.isEmpty()) {
-            clearError();
-            return;
-        }
+        if (value.isEmpty()) { clearError(); return; }
+        
         boolean isValid = UIValidator.isValidField(this.fieldType, value);
-        if (isValid)
-            setValid();
-        else
-            setError();
+        if (isValid) setValid();
+        else setError();
 
-        // If this is a confirmation field, check if it matches the primary
         if (referenceField != null) {
-            if (value.equals(referenceField.getValue())) {
-                setValid();
-            } else {
-                setError();
-            }
-        } else {
-            // Normal password validation (e.g., length > 0)
-            setValid();
+            if (value.equals(referenceField.getValue())) setValid();
+            else setError();
         }
     }
 
@@ -100,9 +93,9 @@ public class UIPasswordInput extends JPasswordField {
     }
 
     private ImageIcon scaleIcon(String path) {
-        if (path == null)
-            return null;
-        return new ImageIcon(new ImageIcon(path).getImage().getScaledInstance(18, 18, Image.SCALE_SMOOTH));
+        if (path == null) return null;
+        return new ImageIcon(new ImageIcon(path).getImage()
+            .getScaledInstance(18, 18, Image.SCALE_SMOOTH));
     }
 
     private void togglePasswordVisibility() {
@@ -111,24 +104,10 @@ public class UIPasswordInput extends JPasswordField {
         repaint();
     }
 
-    public void setFieldType(UIValidator.FieldType type) {
-        this.fieldType = type;
-    }
-
-    public void setError() {
-        state = ValidationState.INVALID;
-        repaint();
-    }
-
-    public void setValid() {
-        state = ValidationState.VALID;
-        repaint();
-    }
-
-    public void clearError() {
-        state = ValidationState.IDLE;
-        repaint();
-    }
+    public void setFieldType(UIValidator.FieldType type) { this.fieldType = type; }
+    public void setError() { state = ValidationState.INVALID; repaint(); }
+    public void setValid() { state = ValidationState.VALID; repaint(); }
+    public void clearError() { state = ValidationState.IDLE; repaint(); }
 
     public String getValue() {
         return new String(getPassword()).trim();
@@ -143,6 +122,12 @@ public class UIPasswordInput extends JPasswordField {
     protected void paintComponent(Graphics g) {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, 
+            RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, 
+            RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+            RenderingHints.VALUE_ANTIALIAS_ON);
 
         int w = getWidth(), h = getHeight();
         g2.setColor(getBackground());
@@ -159,16 +144,14 @@ public class UIPasswordInput extends JPasswordField {
         g2.drawRoundRect(0, 0, w - 1, h - 1, cornerRadius, cornerRadius);
 
         if (lockIcon != null) {
-            int y = (h - 18) / 2;
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.35f));
-            g2.drawImage(lockIcon.getImage(), 10, y, 18, 18, null);
+            g2.drawImage(lockIcon.getImage(), 10, (h - 18) / 2, 18, 18, null);
         }
 
         if (eyeOnIcon != null) {
-            int y = (h - 18) / 2;
             Image eye = isPasswordVisible ? eyeOffIcon.getImage() : eyeOnIcon.getImage();
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
-            g2.drawImage(eye, w - 28, y, 18, 18, null);
+            g2.drawImage(eye, w - 28, (h - 18) / 2, 18, 18, null);
         }
 
         super.paintComponent(g);

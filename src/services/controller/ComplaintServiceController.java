@@ -6,8 +6,8 @@ import java.nio.file.Files;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-import DAOs.AddComplaintDAO;
-import config.DBConnection;
+import daos.AddComplaintDAO;
+import config.database.DBConnection;
 import models.ComplaintDetail;
 
 /**

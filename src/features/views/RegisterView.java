@@ -1,38 +1,38 @@
-package features.ui;
+package features.views;
+
+import app.E_Report;
+import config.UIConfig;
+import features.components.*;
+import features.core.BackgroundPanel;
+import features.core.FormLayoutUtils;
+import models.Credential;
+import models.UserInfo;
+import services.controller.UserServiceController;
+import services.validation.UIValidator;
 
 import javax.swing.*;
 import java.awt.*;
-import config.UIConfig;
-import features.components.*;
-import models.Credential;
-import models.UserInfo;
-import app.E_Report;
-import services.controller.UserServiceController;
-import services.middleware.UIValidator;
 import java.util.List;
 
-public class RegisterUI extends JPanel {
+public class RegisterView extends JPanel {
     private E_Report app;
     private CardLayout cardLayout;
     private JPanel formContainer;
-    private UserInfo ui;
-    private Credential cred;
-    private String fName, mName, lName, sex, contact, email, houseNum, street, purok, username, password,
-            confirmPassword;
-
+    private String fName, mName, lName, sex, contact, email, houseNum, street, purok, username, password, confirmPassword;
     private UIInput txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum, txtUsername;
     private UIPasswordInput txtPassword, txtConfirmPassword;
     private UIRadioButtonGroup rbgSex;
     private UIComboBox<String> cbStreet, cbPurok;
 
-    public RegisterUI(E_Report app) {
+    public RegisterView(E_Report app) {
         this.app = app;
         setLayout(new BorderLayout());
 
-        HomepageUI temp = new HomepageUI(app);
-        JPanel bgPanel = temp.new BackgroundPanel(UIConfig.BACKGROUND_PATH);
+        // Background
+        BackgroundPanel bgPanel = new BackgroundPanel(UIConfig.BACKGROUND_PATH);
         bgPanel.setLayout(new BorderLayout());
 
+        // Header
         JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 20));
         headerPanel.setOpaque(false);
 
@@ -46,6 +46,7 @@ public class RegisterUI extends JPanel {
 
         bgPanel.add(headerPanel, BorderLayout.NORTH);
 
+        // Center wrapper
         JPanel centerWrapper = new JPanel(new GridBagLayout());
         centerWrapper.setOpaque(false);
 
@@ -98,29 +99,24 @@ public class RegisterUI extends JPanel {
         txtLName = new UIInput(15);
         txtEmail = new UIInput(15);
         txtEmail.setPlaceholder("example@email.com");
-        // CRITICAL: This triggers the Live Email Validation
         txtEmail.setFieldType(UIValidator.FieldType.EMAIL);
 
         txtContact = new UIInput(15);
         txtContact.setPlaceholder("09123456789");
         txtContact.setLimit(11, true);
-        // CRITICAL: This triggers the Live Phone Validation
         txtContact.setFieldType(UIValidator.FieldType.PHONE);
+        
         txtHouseNum = new UIInput(15);
         txtHouseNum.setPlaceholder("123");
         txtHouseNum.setLimit(5, true);
+        
         txtUsername = new UIInput(15);
         txtPassword = new UIPasswordInput(15);
         txtConfirmPassword = new UIPasswordInput(15);
         txtConfirmPassword.setMatchTarget(txtPassword);
 
-        // ✅ FIX: REQUIRED for validator to detect fields
-        txtContact.setPlaceholder("09xxxxxxxxx/08xxxxxxxxx");
-        txtEmail.setPlaceholder("e.g. youremail@gmail.com");
-
         addInputGroup(panel, "First Name", txtFName, gbc, 0, 1);
         addInputGroup(panel, "Middle Name", txtMName, gbc, 1, 1);
-
         addInputGroup(panel, "Last Name", txtLName, gbc, 0, 3);
 
         rbgSex.setPreferredSize(new Dimension(200, 40));
@@ -136,9 +132,7 @@ public class RegisterUI extends JPanel {
         addInputGroup(panel, "Purok", cbPurok, gbc, 0, 9);
 
         UIButton btnNext = new UIButton("Continue to Credentials", UIConfig.SUCCESS,
-                new Dimension(540, 50),
-                UIConfig.BTN_SECONDARY_FONT, 25,
-                UIButton.ButtonType.PRIMARY);
+                new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
 
         gbc.gridx = 0;
         gbc.gridy = 11;
@@ -149,18 +143,15 @@ public class RegisterUI extends JPanel {
             boolean hasError = UIValidator.validateInputs(List.of(
                     txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum));
 
-            if (UIValidator.validateComboBox(cbStreet))
-                hasError = true;
-            if (UIValidator.validateComboBox(cbPurok))
-                hasError = true;
+            if (UIValidator.validateComboBox(cbStreet)) hasError = true;
+            if (UIValidator.validateComboBox(cbPurok)) hasError = true;
 
             if (rbgSex.getSelectedValue() == null) {
                 JOptionPane.showMessageDialog(this, "Please select Sex");
                 hasError = true;
             }
 
-            if (hasError)
-                return;
+            if (hasError) return;
 
             fName = txtFName.getValue();
             mName = txtMName.getValue();
@@ -177,7 +168,18 @@ public class RegisterUI extends JPanel {
 
         panel.add(btnNext, gbc);
 
-        addFooter(panel, gbc, 12);
+        JPanel footer = FormLayoutUtils.createFooterLink(
+            "Already have an account? ", 
+            "Login here",
+            UIConfig.PRIMARY,
+            () -> app.navigate("login")
+        );
+        gbc.gridy = 12;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.PAGE_END;
+        gbc.insets = new Insets(5, 0, 25, 0);
+        panel.add(footer, gbc);
+
         return panel;
     }
 
@@ -203,11 +205,8 @@ public class RegisterUI extends JPanel {
         addInputGroup(panel, "Password", txtPassword, gbc, 0, 3);
         addInputGroup(panel, "Confirm Password", txtConfirmPassword, gbc, 0, 5);
 
-        UIButton btnFinish = new UIButton("Complete Registration",
-                UIConfig.SUCCESS,
-                new Dimension(540, 50),
-                UIConfig.BTN_SECONDARY_FONT, 25,
-                UIButton.ButtonType.PRIMARY);
+        UIButton btnFinish = new UIButton("Complete Registration", UIConfig.SUCCESS,
+                new Dimension(540, 50), UIConfig.BTN_SECONDARY_FONT, 25, UIButton.ButtonType.PRIMARY);
 
         gbc.gridx = 0;
         gbc.gridy = 7;
@@ -226,13 +225,11 @@ public class RegisterUI extends JPanel {
         gbc.insets = new Insets(5, 0, 20, 0);
         panel.add(btnBack, gbc);
 
-        btnFinish.addActionListener(e -> {        
+        btnFinish.addActionListener(e -> {
+            boolean hasError = UIValidator.validatePasswords(List.of(txtPassword, txtConfirmPassword)) 
+                | UIValidator.validateInputs(List.of(txtUsername));
 
-            boolean hasError = UIValidator.validatePasswords(List.of(txtPassword, txtConfirmPassword)) | 
-                           UIValidator.validateInputs(List.of(txtUsername));
-
-            if (hasError)
-                return;
+            if (hasError) return;
 
             password = txtPassword.getValue();
             confirmPassword = txtConfirmPassword.getValue();
@@ -241,58 +238,24 @@ public class RegisterUI extends JPanel {
                 txtConfirmPassword.setError();
                 JOptionPane.showMessageDialog(this, "Error: Passwords do not match");
                 return;
-        }
-
-            if (hasError)
-                return;
+            }
 
             username = txtUsername.getValue();
 
-            ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, street, purok);
-            cred = new Credential(username, password);
-            UserServiceController userService = new UserServiceController();
-            String result = userService.registerUser(ui, cred);
+            UserInfo ui = new UserInfo(fName, mName, lName, sex, contact, email, houseNum, street, purok);
+            Credential cred = new Credential(username, password);
+            String result = new UserServiceController().registerUser(ui, cred);
 
             if ("SUCCESS".equals(result)) {
                 JOptionPane.showMessageDialog(this, "Registration Successful!", "Success",
                         JOptionPane.INFORMATION_MESSAGE);
-                        app.navigate("login");
+                app.navigate("login");
             } else {
-                // This will now show "Username is already taken..." or any other error
                 JOptionPane.showMessageDialog(this, result, "Registration Error", JOptionPane.WARNING_MESSAGE);
             }
-           
         });
 
         return panel;
-    }
-
-    private void addFooter(JPanel panel, GridBagConstraints gbc, int row) {
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-        footer.setOpaque(false);
-
-        JLabel lblHaveAccount = new JLabel("Already have an account?");
-        JLabel lblLoginLink = new JLabel("Login here");
-
-        lblLoginLink.setForeground(UIConfig.PRIMARY);
-        lblLoginLink.setFont(new Font("SansSerif", Font.BOLD, 14));
-        lblLoginLink.setCursor(new Cursor(Cursor.HAND_CURSOR));
-
-        lblLoginLink.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent evt) {
-                app.navigate("login");
-            }
-        });
-
-        footer.add(lblHaveAccount);
-        footer.add(lblLoginLink);
-
-        gbc.gridy = row;
-        gbc.weighty = 1.0;
-        gbc.anchor = GridBagConstraints.PAGE_END;
-        gbc.insets = new Insets(5, 0, 25, 0);
-
-        panel.add(footer, gbc);
     }
 
     private void addInputGroup(JPanel panel, String title, JComponent input,

@@ -1,10 +1,10 @@
 package tests.integrations;
 
-import DAOs.AddUserDAO;
-import DAOs.AddComplaintDAO;
-import DAOs.GetUserDAO;
-import DAOs.GetComplaintDAO;
-import config.DBConnection;
+import daos.AddUserDAO;
+import daos.AddComplaintDAO;
+import daos.GetUserDAO;
+import daos.GetComplaintDAO;
+import config.database.DBConnection;
 import models.UserInfo;
 import models.Credential;
 import models.ComplaintDetail;
@@ -85,12 +85,12 @@ public class DAOIntegrationTest {
 
             // Retrieve and verify
             GetUserDAO getUserDAO = new GetUserDAO();
-            UserInfo retrievedUI = getUserDAO.getUser(userID);
+            UserInfo retrievedUI = getUserDAO.getUser(DBConnection.connect() ,userID);
             if (retrievedUI == null || !retrievedUI.getEmail().equals("john.doe@example.com")) {
                 throw new Exception("Retrieved user does not match inserted user");
             }
 
-            Credential retrievedCred = getUserDAO.getCredential("johndoe", "password123");
+            Credential retrievedCred = getUserDAO.getCredential(DBConnection.connect(), "johndoe", "password123");
             if (retrievedCred == null || retrievedCred.getUI_ID() != userID) {
                 throw new Exception("Retrieved credential does not match inserted credential");
             }
@@ -141,7 +141,8 @@ public class DAOIntegrationTest {
             cd.setDetails("Loud music every night");
             cd.setPhotoAttachmentBytes(null);
 
-            int complaintID = AddComplaintDAO.addComplaint(con, userID, cd);
+            AddComplaintDAO acDao = new AddComplaintDAO();
+            int complaintID = acDao.addComplaint(con, userID, cd);
             if (complaintID <= 0)
                 throw new Exception("Complaint insertion failed");
 
@@ -153,8 +154,8 @@ public class DAOIntegrationTest {
             chd.setProcess("Assigned");
             chd.setDateTimeUpdated(new Timestamp(System.currentTimeMillis()));
             chd.setUpdatedBy("Admin");
-
-            int chdID = AddComplaintDAO.addComplaintHistory(con, complaintID, chd);
+            
+            int chdID = acDao.addComplaintHistory(con, complaintID, chd);
             if (chdID <= 0)
                 throw new Exception("Complaint history insertion failed");
             System.out.println("-> PASS: Complaint history inserted with ID " + chdID);
@@ -166,23 +167,23 @@ public class DAOIntegrationTest {
             ca.setOIC("Officer A");
             ca.setResolutionDateTime(new Timestamp(System.currentTimeMillis()));
 
-            boolean actionInserted = AddComplaintDAO.addComplaintAction(con, complaintID, ca);
+            boolean actionInserted = acDao.addComplaintAction(con, complaintID, ca);
             if (!actionInserted)
                 throw new Exception("Complaint action insertion failed");
             System.out.println("-> PASS: Complaint action inserted for complaint ID " + complaintID);
 
             // Step 5: retrieve complaint and verify
             GetComplaintDAO getComplaintDAO = new GetComplaintDAO();
-            ComplaintDetail retrievedCD = getComplaintDAO.getComplaint(userID, complaintID);
+            ComplaintDetail retrievedCD = getComplaintDAO.getComplaint(con, userID, complaintID);
             if (retrievedCD == null || !retrievedCD.getSubject().equals("Noise complaint")) {
                 throw new Exception("Retrieved complaint does not match inserted complaint");
             }
 
-            List<ComplaintHistoryDetail> retrievedCHD = getComplaintDAO.getComplaintHistory(complaintID);
+            List<ComplaintHistoryDetail> retrievedCHD = getComplaintDAO.getComplaintHistory(con, complaintID);
             if (retrievedCHD.isEmpty())
                 throw new Exception("Complaint history not retrieved");
 
-            ComplaintAction retrievedCA = getComplaintDAO.getComplaintAction(complaintID);
+            ComplaintAction retrievedCA = getComplaintDAO.getComplaintAction(con, complaintID);
             if (retrievedCA == null || !retrievedCA.getOIC().equals("Officer A")) {
                 throw new Exception("Complaint action not retrieved correctly");
             }

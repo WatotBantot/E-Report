@@ -1,7 +1,7 @@
 package tests.units;
 
-import config.DBConnection;
-import DAOs.GetUserDAO;
+import config.database.DBConnection;
+import daos.GetUserDAO;
 import models.UserInfo;
 import models.Credential;
 
@@ -51,7 +51,7 @@ public class GetUserDAOTest {
             String expectedName = rs.getString("first_name");
 
             // Run the target DAO method
-            UserInfo ui = dao.getUser(targetId);
+            UserInfo ui = dao.getUser(DBConnection.connect(), targetId);
 
             // Verify the data came back and matches
             if (ui != null && expectedName.equals(ui.getFName())) {
@@ -88,7 +88,7 @@ public class GetUserDAOTest {
             String targetPass = rs.getString("password");
 
             // Run the target DAO method
-            Credential c = dao.getCredential(targetUser, targetPass);
+            Credential c = dao.getCredential(DBConnection.connect(), targetUser, targetPass);
 
             // Verify the data came back and matches
             if (c != null && targetUser.equals(c.getUsername())) {

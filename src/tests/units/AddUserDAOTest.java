@@ -1,7 +1,7 @@
 package tests.units;
 
-import config.DBConnection;
-import DAOs.AddUserDAO;
+import config.database.DBConnection;
+import daos.AddUserDAO;
 import models.UserInfo;
 import models.Credential;
 

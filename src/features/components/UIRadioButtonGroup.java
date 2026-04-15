@@ -11,11 +11,12 @@ public class UIRadioButtonGroup extends JPanel {
     public UIRadioButtonGroup(String[] options) {
         setOpaque(false);
         setLayout(new FlowLayout(FlowLayout.LEFT, 15, 0));
+        setCursor(new Cursor(Cursor.HAND_CURSOR));
         group = new ButtonGroup();
 
         for (String option : options) {
             JRadioButton rb = new JRadioButton(option);
-            rb.setFont(UIConfig.BODY); // Using your config font
+            rb.setFont(UIConfig.BODY);
             rb.setOpaque(false);
             rb.setFocusPainted(false);
             rb.setCursor(new Cursor(Cursor.HAND_CURSOR));

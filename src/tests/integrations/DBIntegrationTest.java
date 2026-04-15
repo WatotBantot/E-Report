@@ -1,8 +1,8 @@
 package tests.integrations;
 
-import config.DBCreate;
-import config.DBConnection;
-import config.TBCreate;
+import config.database.DBCreate;
+import config.database.DBConnection;
+import config.database.TBCreate;
 
 import java.sql.Connection;
 import java.sql.ResultSet;

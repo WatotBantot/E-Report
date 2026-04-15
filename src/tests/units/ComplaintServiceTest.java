@@ -11,7 +11,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.Timestamp;
 
-import config.DBConnection;
+import config.database.DBConnection;
 import models.ComplaintDetail;
 import services.controller.ComplaintServiceController;
 

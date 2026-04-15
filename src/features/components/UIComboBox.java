@@ -4,11 +4,13 @@ import javax.swing.*;
 import javax.swing.plaf.basic.BasicComboBoxUI;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.awt.event.*;
 import config.UIConfig;
 
 public class UIComboBox<E> extends JComboBox<E> {
 
     private int radius = 12;
+    private boolean isHovered = false;
 
     public enum ValidationState {
         IDLE,
@@ -26,7 +28,7 @@ public class UIComboBox<E> extends JComboBox<E> {
         setForeground(UIConfig.TEXT_PRIMARY);
         setFocusable(false);
         setOpaque(false);
-
+        
         setBorder(new EmptyBorder(6, 12, 6, 10));
 
         setRenderer(new DefaultListCellRenderer() {
@@ -51,12 +53,35 @@ public class UIComboBox<E> extends JComboBox<E> {
             }
         });
 
-        // FIX: Dynamically clear the error when the user makes a valid selection
+        // Clear error on valid selection
         addActionListener(e -> {
             if (!isInvalidSelection() && state == ValidationState.INVALID) {
                 setValid();
             }
             repaint();
+        });
+
+        // Mouse listener for hover and click effects
+        addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent evt) {
+                // Show dropdown on click
+                showPopup();
+            }
+            
+            @Override
+            public void mouseEntered(MouseEvent evt) {
+                isHovered = true;
+                setCursor(new Cursor(Cursor.HAND_CURSOR));
+                repaint();
+            }
+            
+            @Override
+            public void mouseExited(MouseEvent evt) {
+                isHovered = false;
+                setCursor(new Cursor(Cursor.DEFAULT_CURSOR));
+                repaint();
+            }
         });
 
         setUI(new BasicComboBoxUI() {
@@ -108,19 +133,20 @@ public class UIComboBox<E> extends JComboBox<E> {
         int w = getWidth();
         int h = getHeight();
 
-        // BACKGROUND
-        g2.setColor(getBackground());
+        // BACKGROUND - change on hover
+        if (isHovered) {
+            g2.setColor(new Color(250, 250, 250));
+        } else {
+            g2.setColor(getBackground());
+        }
         g2.fillRoundRect(0, 0, w - 1, h - 1, radius, radius);
 
         // BORDER
         Color borderColor;
-
-        // FIX: Removed the state mutation logic from here. 
-        // Rendering should only READ state, never WRITE state.
         switch (state) {
             case INVALID -> borderColor = new Color(220, 60, 60);
             case VALID -> borderColor = new Color(0, 170, 80);
-            default -> borderColor = new Color(200, 200, 200);
+            default -> borderColor = isHovered ? new Color(180, 180, 180) : new Color(200, 200, 200);
         }
 
         g2.setColor(borderColor);

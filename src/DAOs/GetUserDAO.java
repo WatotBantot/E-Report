@@ -1,4 +1,4 @@
-package DAOs;
+package daos;
 
 import models.Credential;
 import models.UserInfo;

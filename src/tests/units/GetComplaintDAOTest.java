@@ -1,7 +1,7 @@
 package tests.units;
 
-import config.DBConnection;
-import DAOs.GetComplaintDAO;
+import config.database.DBConnection;
+import daos.GetComplaintDAO;
 import models.ComplaintDetail;
 import models.ComplaintHistoryDetail;
 import models.ComplaintAction;
@@ -62,7 +62,7 @@ public class GetComplaintDAOTest {
         System.out.println("[TEST] Get Single Complaint");
 
         try {
-            ComplaintDetail cd = dao.getComplaint(uiId, cdId);
+            ComplaintDetail cd = dao.getComplaint(DBConnection.connect(), uiId, cdId);
             if (cd != null) {
                 System.out.println("-> PASS: Successfully fetched Complaint ID: " + cdId);
                 System.out.println("   Subject: " + cd.getSubject());
@@ -94,7 +94,7 @@ public class GetComplaintDAOTest {
     public static void testGetAllComplaint(GetComplaintDAO dao, int uiId) {
         System.out.println("[TEST] Get All Complaints for User");
         try {
-            List<ComplaintDetail> list = dao.getAllComplaint(uiId);
+            List<ComplaintDetail> list = dao.getAllComplaint(DBConnection.connect(), uiId);
             if (list != null && !list.isEmpty()) {
                 System.out.println(
                         "-> PASS: Successfully fetched " + list.size() + " complaint(s) for User ID: " + uiId + "\n");
@@ -114,7 +114,7 @@ public class GetComplaintDAOTest {
     public static void testGetComplaintHistory(GetComplaintDAO dao, int cdId, int chdId) {
         System.out.println("[TEST] Get Complaint History");
         try {
-            List<ComplaintHistoryDetail> historyList = dao.getComplaintHistory(cdId);
+            List<ComplaintHistoryDetail> historyList = dao.getComplaintHistory(DBConnection.connect(), cdId);
 
             if (historyList != null && !historyList.isEmpty()) {
                 System.out.println("-> PASS: Successfully fetched " + historyList.size()
@@ -145,7 +145,7 @@ public class GetComplaintDAOTest {
     public static void testGetComplaintAction(GetComplaintDAO dao, int cdId) {
         System.out.println("[TEST] Get Complaint Action");
         try {
-            ComplaintAction ca = dao.getComplaintAction(cdId);
+            ComplaintAction ca = dao.getComplaintAction(DBConnection.connect(), cdId);
             if (ca != null) {
                 System.out.println("-> PASS: Successfully fetched Action for Complaint ID: " + cdId);
                 System.out.println("   Action Taken: " + ca.getActionTaken());

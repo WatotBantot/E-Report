@@ -1,6 +1,6 @@
 package tests.units;
 
-import config.*;
+import config.database.*;
 import java.sql.Connection;
 
 public class DBTest {

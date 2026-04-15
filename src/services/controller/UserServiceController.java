@@ -1,7 +1,7 @@
 package services.controller;
 
-import DAOs.AddUserDAO;
-import config.DBConnection;
+import daos.AddUserDAO;
+import config.database.DBConnection;
 import models.Credential;
 import models.UserInfo;
 import java.sql.Connection;
