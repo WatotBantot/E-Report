@@ -47,8 +47,4 @@ public class CardContainer extends JPanel {
     public CardLayout getCardLayout() {
         return cardLayout;
     }
-    
-    public JPanel getContainer() {
-        return container;
-    }
 }
