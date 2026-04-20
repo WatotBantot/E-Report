@@ -18,7 +18,8 @@ public class RegisterView extends JPanel {
     private E_Report app;
     private CardLayout cardLayout;
     private JPanel formContainer;
-    private String fName, mName, lName, sex, contact, email, houseNum, street, purok, username, password, confirmPassword;
+    private String fName, mName, lName, sex, contact, email, houseNum, street, purok, username, password,
+            confirmPassword;
     private UIInput txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum, txtUsername;
     private UIPasswordInput txtPassword, txtConfirmPassword;
     private UIRadioButtonGroup rbgSex;
@@ -105,11 +106,11 @@ public class RegisterView extends JPanel {
         txtContact.setPlaceholder("09123456789");
         txtContact.setLimit(11, true);
         txtContact.setFieldType(UIValidator.FieldType.PHONE);
-        
+
         txtHouseNum = new UIInput(15);
         txtHouseNum.setPlaceholder("123");
         txtHouseNum.setLimit(5, true);
-        
+
         txtUsername = new UIInput(15);
         txtPassword = new UIPasswordInput(15);
         txtConfirmPassword = new UIPasswordInput(15);
@@ -143,15 +144,18 @@ public class RegisterView extends JPanel {
             boolean hasError = UIValidator.validateInputs(List.of(
                     txtFName, txtMName, txtLName, txtContact, txtEmail, txtHouseNum));
 
-            if (UIValidator.validateComboBox(cbStreet)) hasError = true;
-            if (UIValidator.validateComboBox(cbPurok)) hasError = true;
+            if (UIValidator.validateComboBox(cbStreet))
+                hasError = true;
+            if (UIValidator.validateComboBox(cbPurok))
+                hasError = true;
 
             if (rbgSex.getSelectedValue() == null) {
                 JOptionPane.showMessageDialog(this, "Please select Sex");
                 hasError = true;
             }
 
-            if (hasError) return;
+            if (hasError)
+                return;
 
             fName = txtFName.getValue();
             mName = txtMName.getValue();
@@ -169,11 +173,10 @@ public class RegisterView extends JPanel {
         panel.add(btnNext, gbc);
 
         JPanel footer = FormLayoutUtils.createFooterLink(
-            "Already have an account? ", 
-            "Login here",
-            UIConfig.PRIMARY,
-            () -> app.navigate("login")
-        );
+                "Already have an account? ",
+                "Login here",
+                UIConfig.PRIMARY,
+                () -> app.navigate("login"));
         gbc.gridy = 12;
         gbc.weighty = 1.0;
         gbc.anchor = GridBagConstraints.PAGE_END;
@@ -226,10 +229,11 @@ public class RegisterView extends JPanel {
         panel.add(btnBack, gbc);
 
         btnFinish.addActionListener(e -> {
-            boolean hasError = UIValidator.validatePasswords(List.of(txtPassword, txtConfirmPassword)) 
-                | UIValidator.validateInputs(List.of(txtUsername));
+            boolean hasError = UIValidator.validatePasswords(List.of(txtPassword, txtConfirmPassword))
+                    | UIValidator.validateInputs(List.of(txtUsername));
 
-            if (hasError) return;
+            if (hasError)
+                return;
 
             password = txtPassword.getValue();
             confirmPassword = txtConfirmPassword.getValue();
@@ -263,14 +267,15 @@ public class RegisterView extends JPanel {
 
         gbc.gridx = x;
         gbc.gridy = y;
-        gbc.insets = new Insets(0, 40, 2, 40);
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(0, 30, 2, 10);
 
         JLabel lbl = new JLabel(title);
         lbl.setFont(UIConfig.INPUT_TITLE);
         panel.add(lbl, gbc);
 
         gbc.gridy = y + 1;
-        gbc.insets = new Insets(5, 40, 5, 40);
+        gbc.insets = new Insets(5, 30, 5, 30);
 
         panel.add(input, gbc);
     }
