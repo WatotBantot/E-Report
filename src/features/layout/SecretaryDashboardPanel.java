@@ -19,7 +19,6 @@ import java.util.List;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JCheckBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
@@ -29,7 +28,6 @@ import javax.swing.JPanel;
 import app.E_Report;
 import config.UIConfig;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
-import features.core.dashboardpanel.secretary.ButtonEditor;
 import features.core.dashboardpanel.secretary.InfoPanel;
 import features.core.dashboardpanel.secretary.RecentReportsPanel;
 
