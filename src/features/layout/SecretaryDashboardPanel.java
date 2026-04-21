@@ -27,9 +27,9 @@ import javax.swing.JPanel;
 // ============================================================
 import app.E_Report;
 import config.UIConfig;
+import features.core.RecentReportsPanel;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.secretary.InfoPanel;
-import features.core.dashboardpanel.secretary.RecentReportsPanel;
 
 /**
  * SecretaryDashboardPanel - Main dashboard view for Secretary role

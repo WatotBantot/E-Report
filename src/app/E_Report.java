@@ -39,7 +39,7 @@ public class E_Report extends JFrame {
         cardLayout = new CardLayout();
         container = new JPanel(cardLayout);
 
-        container.add(new HomepageView(this), "home");        
+        container.add(new HomepageView(this), "home");
 
         add(container);
 
@@ -67,6 +67,13 @@ public class E_Report extends JFrame {
         repaint();
     }
 
+    public void logout() {
+        this.ui = null;
+        this.cred = null;
+        this.us = null;
+        navigate("home");
+    }
+
     public void setUserSession(UserSession us) {
         this.us = us;
     }
@@ -75,11 +82,11 @@ public class E_Report extends JFrame {
         return us;
     }
 
-    public void setUserInfo(UserInfo ui){
+    public void setUserInfo(UserInfo ui) {
         this.ui = ui;
     }
 
-    public UserInfo getUserInfo(){        
+    public UserInfo getUserInfo() {
         return ui;
     }
 
