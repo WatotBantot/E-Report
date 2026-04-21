@@ -138,8 +138,6 @@ public class ResidentDashboardPanel extends JPanel {
 
         // Initialize data storage lists (empty)
         this.reportDataList = new ArrayList<>();
-        this.activityList = new ArrayList<>();
-        this.taskList = new ArrayList<>();
 
         initializeUI();
     }
@@ -186,51 +184,20 @@ public class ResidentDashboardPanel extends JPanel {
         gbc.insets = new Insets(0, 0, 0, 0);
 
         // LEFT — Recent Reports (60% width, full height)
-        reportsPanel = new RecentReportsPanel("Recent Reports", REPORT_TABLE_COLUMNS);
+        reportsPanel = new RecentReportsPanel("My Recent Reports", REPORT_TABLE_COLUMNS);
         reportsPanel.setButtonColumn(ACTION_COLUMN_INDEX, ACTION_BUTTON_TEXT, ACTION_BUTTON_COLOR);
         reportsPanel.setOnViewClicked(row -> handleReportAction(row));
 
         gbc.gridx = 0;
-        gbc.weightx = 0.6;
+        gbc.weightx = 1;
         gbc.insets = new Insets(0, 0, 0, SECTION_GAP);
         contentRow.add(reportsPanel, gbc);
-
-        // RIGHT — Activities (top) + Tasks (bottom), stacked, 40% width
-        JPanel rightColumn = new JPanel(new GridBagLayout());
-        rightColumn.setOpaque(false);
-
-        GridBagConstraints rgbc = new GridBagConstraints();
-        rgbc.gridx = 0;
-        rgbc.fill = GridBagConstraints.BOTH;
-        rgbc.weightx = 1.0;
-        rgbc.insets = new Insets(0, 0, 0, 0);
-
-        activitiesPanel = new InfoPanel("Recent Activities");
-        rgbc.gridy = 0;
-        rgbc.weighty = 0.5;
-        rgbc.insets = new Insets(0, 0, SECTION_GAP, 0);
-        rightColumn.add(activitiesPanel, rgbc);
-
-        tasksPanel = new InfoPanel("Tasks");
-        rgbc.gridy = 1;
-        rgbc.weighty = 0.5;
-        rgbc.insets = new Insets(0, 0, 0, 0);
-        rightColumn.add(tasksPanel, rgbc);
-
-        gbc.gridx = 1;
-        gbc.weightx = 0.4;
-        gbc.insets = new Insets(0, 0, 0, 0);
-        contentRow.add(rightColumn, gbc);
 
         wrapper.add(contentRow);
         wrapper.add(Box.createVerticalGlue());
         add(wrapper, BorderLayout.CENTER);
 
         // Seed data
-        addTask("Review pending reports");
-        addTask("Update status of ongoing reports");
-        addTask("Encode walk-in complaints");
-        addActivity("Report R-001 was submitted");
         addReport(new Object[] { "R-001", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
         addReport(new Object[] { "R-002", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
         addReport(new Object[] { "R-003", "Noise", "Purok 1", "2026-04-20", "2026-04-21", "Pending", "View" });
@@ -377,130 +344,6 @@ public class ResidentDashboardPanel extends JPanel {
     }
 
     // ============================================================
-    // PUBLIC API - Activity Management
-    // ============================================================
-
-    /**
-     * Adds a new activity item to the Recent Activities panel
-     * Stores in internal list for controller management
-     * 
-     * @param activity Activity description text
-     * @return void
-     */
-    public void addActivity(String activity) {
-        activityList.add(activity);
-        activitiesPanel.addItem(activity);
-    }
-
-    /**
-     * Removes an activity by index
-     * 
-     * @param index Activity index to remove
-     * @return void
-     */
-    public void removeActivity(int index) {
-        if (index >= 0 && index < activityList.size()) {
-            activityList.remove(index);
-            refreshActivities();
-        }
-    }
-
-    /**
-     * Clears and sets all activities from provided list
-     * 
-     * @param activities List of activity strings
-     * @return void
-     */
-    public void setActivities(List<String> activities) {
-        activityList.clear();
-        activityList.addAll(activities);
-        refreshActivities();
-    }
-
-    /**
-     * Refreshes activities panel from internal list
-     * 
-     * @return void
-     */
-    public void refreshActivities() {
-        activitiesPanel.clearItems();
-        for (String activity : activityList) {
-            activitiesPanel.addItem(activity);
-        }
-    }
-
-    /**
-     * Gets current activities list for external manipulation
-     * 
-     * @return List of activity strings
-     */
-    public List<String> getActivityList() {
-        return new ArrayList<>(activityList);
-    }
-
-    // ============================================================
-    // PUBLIC API - Task Management
-    // ============================================================
-
-    /**
-     * Adds a new task item to the Tasks panel
-     * Stores in internal list for controller management
-     * 
-     * @param task Task description text
-     * @return void
-     */
-    public void addTask(String task) {
-        taskList.add(task);
-        tasksPanel.addItem(task);
-    }
-
-    /**
-     * Removes a task by index
-     * 
-     * @param index Task index to remove
-     * @return void
-     */
-    public void removeTask(int index) {
-        if (index >= 0 && index < taskList.size()) {
-            taskList.remove(index);
-            refreshTasks();
-        }
-    }
-
-    /**
-     * Clears and sets all tasks from provided list
-     * 
-     * @param tasks List of task strings
-     * @return void
-     */
-    public void setTasks(List<String> tasks) {
-        taskList.clear();
-        taskList.addAll(tasks);
-        refreshTasks();
-    }
-
-    /**
-     * Refreshes tasks panel from internal list
-     * 
-     * @return void
-     */
-    public void refreshTasks() {
-        tasksPanel.clearItems();
-        for (String task : taskList) {
-            tasksPanel.addItem(task);
-        }
-    }
-
-    /**
-     * Gets current tasks list for external manipulation
-     * 
-     * @return List of task strings
-     */
-    public List<String> getTaskList() {
-        return new ArrayList<>(taskList);
-    }
-
-    // ============================================================
     // PUBLIC API - Bulk Operations
     // ============================================================
 
@@ -514,8 +357,6 @@ public class ResidentDashboardPanel extends JPanel {
         activityList.clear();
         taskList.clear();
         refreshReportsTable();
-        refreshActivities();
-        refreshTasks();
     }
 
     /**

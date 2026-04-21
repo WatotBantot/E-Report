@@ -2,6 +2,7 @@ package features.layout;
 
 import javax.swing.*;
 
+import app.E_Report;
 import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.*;
 
@@ -11,12 +12,13 @@ import java.util.Arrays;
 import java.util.Date;
 
 public class CaptainDashboardPanel extends JPanel {
-
+    private E_Report app;
     private DashboardInfoCardsPanel infoCardsPanel;
     private FilterBarPanel filterBarPanel;
     private static final int MIN_CONTENT_WIDTH = 1000;
 
-    public CaptainDashboardPanel() {
+    public CaptainDashboardPanel(E_Report app) {
+        this.app = app;
         setLayout(new BorderLayout());
         setOpaque(false);
 
