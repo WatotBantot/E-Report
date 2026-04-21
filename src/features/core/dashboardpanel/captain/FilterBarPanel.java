@@ -1,686 +1,592 @@
 package features.core.dashboardpanel.captain;
 
 import javax.swing.*;
+import javax.swing.border.*;
 import java.awt.*;
+import java.awt.event.*;
+import java.util.Calendar;
 import java.util.Date;
 import config.UIConfig;
 import features.components.UIComboBox;
 import features.components.UIButton;
 import features.components.UIInput;
+import features.components.filter.TimeFilter;
+import features.components.filter.TimeFilterPanel;
 
 /**
- * FilterBarPanel
- *
- * A flexible Swing panel that renders a filter bar in one of two operational
- * modes: DASHBOARD mode or SEARCH mode. The active mode is determined at
- * construction time and is immutable for the lifetime of the panel.
- *
- * In DASHBOARD mode, the panel exposes date range pickers, category, purok,
- * and status dropdowns, along with Apply and Reset action buttons. Filter
- * events are dispatched through a FilterListener callback.
- *
- * In SEARCH mode, the panel exposes a text search field, a category dropdown,
- * and date range pickers, along with Search and Clear action buttons. Search
- * events are dispatched through a SearchListener callback.
- *
- * Both modes share the same date pickers, category combo, and action button
- * references (applyButton, resetButton), but their labels and behaviors differ
- * depending on the active mode.
- *
- * Nested Types:
- * - Mode : Enum defining DASHBOARD and SEARCH operational modes.
- * - FilterListener : Callback interface for DASHBOARD mode filter events.
- * - SearchListener : Callback interface for SEARCH mode search events.
+ * FilterBarPanel (Pill Design - Fixed)
  */
 public class FilterBarPanel extends JPanel {
 
     // -------------------------------------------------------------------------
-    // DASHBOARD MODE COMPONENTS
+    // COMPONENTS
     // -------------------------------------------------------------------------
-
-    /** Date picker for the start of the filter date range. Used in both modes. */
-    private ModernDatePicker dateFromPicker;
-
-    /** Date picker for the end of the filter date range. Used in both modes. */
-    private ModernDatePicker dateToPicker;
-
-    /** Dropdown for selecting a report category. Used in both modes. */
+    private TimeFilterPanel timeFilterPanel;
     private UIComboBox<String> categoryCombo;
-
-    /** Dropdown for selecting a purok. Used in DASHBOARD mode only. */
     private UIComboBox<String> purokCombo;
-
-    /** Dropdown for selecting a report status. Used in DASHBOARD mode only. */
     private UIComboBox<String> statusCombo;
-
-    // -------------------------------------------------------------------------
-    // SEARCH MODE COMPONENTS
-    // -------------------------------------------------------------------------
-
-    /** Text input field for entering a search query. Used in SEARCH mode only. */
     private UIInput searchField;
-
-    // -------------------------------------------------------------------------
-    // SHARED COMPONENTS
-    // -------------------------------------------------------------------------
-
-    /**
-     * Primary action button. Labeled "Apply" in DASHBOARD mode and "Search"
-     * in SEARCH mode.
-     */
     private UIButton applyButton;
-
-    /**
-     * Secondary action button. Labeled "Reset" in DASHBOARD mode and "Clear"
-     * in SEARCH mode.
-     */
-    private UIButton resetButton;
+    private JButton moreFiltersButton;
+    private JPanel advancedFiltersRow;
+    private JPanel activeFiltersChips;
 
     // -------------------------------------------------------------------------
-    // CONSTANTS
+    // STATE
     // -------------------------------------------------------------------------
-
-    /** Fixed preferred width in pixels for all combo box components. */
-    private final int comboBoxSizeWidth = 140;
-
-    // -------------------------------------------------------------------------
-    // INSTANCE VARIABLES
-    // -------------------------------------------------------------------------
-
-    /**
-     * The operational mode this panel was initialized with. Set once at
-     * construction and never changed afterward.
-     */
     private final Mode currentMode;
-
-    /** Callback listener for filter events in DASHBOARD mode. */
+    private boolean advancedFiltersVisible = false;
     private FilterListener filterListener;
-
-    /** Callback listener for search events in SEARCH mode. */
     private SearchListener searchListener;
 
-    // =========================================================================
-    // NESTED TYPES
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // STYLE CONSTANTS
+    // -------------------------------------------------------------------------
+    private static final Color BAR_BG = new Color(245, 247, 250);
+    private static final Color TIME_COLOR = new Color(25, 118, 210);
+    private static final Color CATEGORY_COLOR = new Color(156, 39, 176);
+    private static final Color PUROK_COLOR = new Color(46, 125, 50);
+    private static final Color STATUS_COLOR = new Color(230, 81, 0);
+    private static final Color SEARCH_COLOR = new Color(0, 150, 136);
+    private static final Color FIELD_BG = Color.WHITE;
+    private static final Color FIELD_BORDER = new Color(220, 224, 230);
+    private static final Color MORE_BTN_COLOR = new Color(100, 110, 130);
 
-    /**
-     * Mode
-     *
-     * Defines the two operational modes of FilterBarPanel. The mode is set
-     * once at construction and determines which components are initialized
-     * and which listener interface is used.
-     *
-     * Values:
-     * DASHBOARD - Renders full filters: date range, category, purok, status,
-     * Apply, and Reset buttons. Events dispatched via FilterListener.
-     * SEARCH - Renders search input, category dropdown, date range pickers,
-     * Search, and Clear buttons. Events dispatched via SearchListener.
-     */
+    private static final int PILL_RADIUS = 20;
+    private static final int FIELD_HEIGHT = 34;
+    private static final int H_GAP = 8;
+
+    // ===================================================================
+    // NESTED TYPES
+    // ===================================================================
     public enum Mode {
-        DASHBOARD,
-        SEARCH
+        DASHBOARD, SEARCH
     }
 
-    /**
-     * FilterListener
-     *
-     * Callback interface for DASHBOARD mode filter events. Implemented by any
-     * class that needs to respond to Apply or Reset actions on the filter bar.
-     */
     public interface FilterListener {
-
-        /**
-         * Called when the Apply button is clicked in DASHBOARD mode.
-         *
-         * @param fromDate The selected start date from the date range picker.
-         * @param toDate   The selected end date from the date range picker.
-         * @param category The currently selected category from the combo box.
-         * @param purok    The currently selected purok from the combo box.
-         * @param status   The currently selected status from the combo box.
-         */
         void onApply(Date fromDate, Date toDate, String category, String purok, String status);
 
-        /**
-         * Called when the Reset button is clicked in DASHBOARD mode.
-         * Signals the listener that all filters have been cleared to defaults.
-         */
         void onReset();
     }
 
-    /**
-     * SearchListener
-     *
-     * Callback interface for SEARCH mode search events. Implemented by any
-     * class that needs to respond to Search or Clear actions on the filter bar.
-     */
     public interface SearchListener {
-
-        /**
-         * Called when the Search button is clicked in SEARCH mode.
-         *
-         * @param searchText The text entered in the search input field.
-         * @param category   The currently selected category from the combo box.
-         * @param fromDate   The selected start date from the date range picker.
-         * @param toDate     The selected end date from the date range picker.
-         */
         void onSearch(String searchText, String category, Date fromDate, Date toDate);
 
-        /**
-         * Called when the Clear button is clicked in SEARCH mode.
-         * Signals the listener that the search input and filters have been reset.
-         */
         void onClearSearch();
     }
 
-    // =========================================================================
+    // ===================================================================
     // CONSTRUCTORS
-    // =========================================================================
-
-    // ========== DASHBOARD MODE CONSTRUCTORS ==================================
-
-    /**
-     * Constructs a FilterBarPanel in DASHBOARD mode with custom dropdown options.
-     *
-     * Sets the mode to DASHBOARD, stores the FilterListener, and initializes
-     * the full dashboard filter layout with the provided dropdown data.
-     *
-     * @param categories Array of category options for the category combo box.
-     * @param puroks     Array of purok options for the purok combo box.
-     * @param statuses   Array of status options for the status combo box.
-     * @param listener   The FilterListener to notify on Apply or Reset actions.
-     */
+    // ===================================================================
     public FilterBarPanel(String[] categories, String[] puroks, String[] statuses, FilterListener listener) {
         this.currentMode = Mode.DASHBOARD;
         this.filterListener = listener;
         initializeDashboard(categories, puroks, statuses);
     }
 
-    /**
-     * Constructs a FilterBarPanel in DASHBOARD mode with default dropdown options.
-     *
-     * Delegates to the full DASHBOARD constructor using a predefined set of
-     * categories, puroks, and statuses.
-     *
-     * Default categories : "Category", "Theft", "Vandalism", "Scam", "Others"
-     * Default puroks : "Purok", "Purok 1" through "Purok 5"
-     * Default statuses : "Status", "Submitted", "Pending", "In Progress",
-     * "Resolved", "Invalid"
-     *
-     * @param listener The FilterListener to notify on Apply or Reset actions.
-     */
     public FilterBarPanel(FilterListener listener) {
-        this(
-                new String[] { "Category", "Theft", "Vandalism", "Scam", "Others" },
-                new String[] { "Purok", "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5" },
-                new String[] { "Status", "Submitted", "Pending", "In Progress", "Resolved", "Invalid" },
+        this(new String[] { "All Categories", "Theft", "Vandalism", "Scam", "Others" },
+                new String[] { "All Puroks", "Purok 1", "Purok 2", "Purok 3", "Purok 4", "Purok 5" },
+                new String[] { "All Statuses", "Submitted", "Pending", "In Progress", "Resolved", "Invalid" },
                 listener);
     }
 
-    // ========== SEARCH MODE CONSTRUCTORS =====================================
-
-    /**
-     * Constructs a FilterBarPanel in SEARCH mode with custom category options.
-     *
-     * Sets the mode to SEARCH, stores the SearchListener, and initializes
-     * the search filter layout with the provided category data.
-     *
-     * @param categories Array of category options for the category combo box.
-     * @param listener   The SearchListener to notify on Search or Clear actions.
-     */
     public FilterBarPanel(String[] categories, SearchListener listener) {
         this.currentMode = Mode.SEARCH;
         this.searchListener = listener;
         initializeSearch(categories);
     }
 
-    /**
-     * Constructs a FilterBarPanel in SEARCH mode with default category options.
-     *
-     * Delegates to the full SEARCH constructor using a predefined set of
-     * categories.
-     *
-     * Default categories : "Category", "Theft", "Vandalism", "Scam", "Others"
-     *
-     * @param listener The SearchListener to notify on Search or Clear actions.
-     */
     public FilterBarPanel(SearchListener listener) {
-        this(
-                new String[] { "Category", "Theft", "Vandalism", "Scam", "Others" },
-                listener);
+        this(new String[] { "All Categories", "Theft", "Vandalism", "Scam", "Others" }, listener);
     }
 
-    // =========================================================================
-    // INITIALIZATION METHODS
-    // =========================================================================
-
-    // -------------------------------------------------------------------------
-    // initializeDashboard — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
-
-    /*
-     * No additional local variables beyond the shared instance fields being
-     * assigned. All components (dateFromPicker, dateToPicker, categoryCombo,
-     * purokCombo, statusCombo) are directly assigned to their instance fields
-     * during initialization.
-     */
-
-    /**
-     * Initializes the panel layout and components for DASHBOARD mode.
-     *
-     * Arranges a date range picker pair, three combo boxes (category, purok,
-     * status), and an Apply/Reset button panel in a left-aligned FlowLayout.
-     * Each component is wrapped in a labeled panel via createLabeledComponent.
-     *
-     * @param categories Array of category options for the category combo box.
-     * @param puroks     Array of purok options for the purok combo box.
-     * @param statuses   Array of status options for the status combo box.
-     */
+    // ===================================================================
+    // INITIALIZATION — DASHBOARD MODE
+    // ===================================================================
     private void initializeDashboard(String[] categories, String[] puroks, String[] statuses) {
-        setLayout(new FlowLayout(FlowLayout.LEFT, 12, 10));
+        setLayout(new BorderLayout(0, 0));
         setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
 
-        dateFromPicker = new ModernDatePicker();
-        add(createLabeledComponent("From:", dateFromPicker));
+        JPanel mainBar = new JPanel();
+        mainBar.setLayout(new BoxLayout(mainBar, BoxLayout.Y_AXIS));
+        mainBar.setOpaque(true);
+        mainBar.setBackground(BAR_BG);
+        mainBar.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(210, 215, 225), 1, true),
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
 
-        dateToPicker = new ModernDatePicker(new Date());
-        add(createLabeledComponent("To:", dateToPicker));
+        // === TOP ROW: Use BorderLayout for left/right alignment ===
+        JPanel topWrapper = new JPanel(new BorderLayout(0, 0));
+        topWrapper.setOpaque(false);
+        topWrapper.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 10));
+
+        JPanel leftRow = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
+        leftRow.setOpaque(false);
+
+        timeFilterPanel = new TimeFilterPanel();
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
+        addColorIndicator(leftRow, timeFilterPanel, TIME_COLOR, "Time Period");
 
         categoryCombo = new UIComboBox<>(categories);
-        categoryCombo.setPreferredSize(new Dimension(comboBoxSizeWidth, 32));
-        add(createLabeledComponent("Category:", categoryCombo));
+        categoryCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
+        styleComboAsPill(categoryCombo, CATEGORY_COLOR);
+        addColorIndicator(leftRow, categoryCombo, CATEGORY_COLOR, "Category");
+
+        moreFiltersButton = createMoreFiltersButton();
+        moreFiltersButton.addActionListener(e -> toggleAdvancedFilters());
+        leftRow.add(Box.createHorizontalStrut(8));
+        leftRow.add(moreFiltersButton);
+
+        topWrapper.add(leftRow, BorderLayout.WEST);
+
+        JPanel rightRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 0));
+        rightRow.setOpaque(false);
+
+        applyButton = createSolidPillButton("Apply", TIME_COLOR);
+        applyButton.addActionListener(e -> {
+            notifyApply();
+            updateActiveChips();
+        });
+        rightRow.add(applyButton);
+
+        JButton resetBtn = createTextButton("Reset");
+        resetBtn.addActionListener(e -> notifyReset());
+        rightRow.add(resetBtn);
+
+        topWrapper.add(rightRow, BorderLayout.EAST);
+        mainBar.add(topWrapper);
+
+        // === ADVANCED ROW ===
+        advancedFiltersRow = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
+        advancedFiltersRow.setOpaque(true);
+        advancedFiltersRow.setBackground(new Color(245, 247, 250));
+        advancedFiltersRow.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 235)),
+                BorderFactory.createEmptyBorder(10, 0, 10, 0)));
+        advancedFiltersRow.setVisible(false);
+        advancedFiltersRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, FIELD_HEIGHT + 20));
 
         purokCombo = new UIComboBox<>(puroks);
-        purokCombo.setPreferredSize(new Dimension(comboBoxSizeWidth, 32));
-        add(createLabeledComponent("Purok:", purokCombo));
+        purokCombo.setPreferredSize(new Dimension(140, FIELD_HEIGHT));
+        styleComboAsPill(purokCombo, PUROK_COLOR);
+        addColorIndicator(advancedFiltersRow, purokCombo, PUROK_COLOR, "Purok");
 
         statusCombo = new UIComboBox<>(statuses);
-        statusCombo.setPreferredSize(new Dimension(comboBoxSizeWidth, 32));
-        add(createLabeledComponent("Status:", statusCombo));
+        statusCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
+        styleComboAsPill(statusCombo, STATUS_COLOR);
+        addColorIndicator(advancedFiltersRow, statusCombo, STATUS_COLOR, "Status");
 
-        add(createButtonPanel(true));
+        mainBar.add(advancedFiltersRow);
+
+        // === ACTIVE FILTERS CHIPS ===
+        activeFiltersChips = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 6));
+        activeFiltersChips.setOpaque(false);
+        activeFiltersChips.setVisible(false);
+        activeFiltersChips.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+        mainBar.add(activeFiltersChips);
+
+        add(mainBar, BorderLayout.CENTER);
     }
 
-    // -------------------------------------------------------------------------
-    // initializeSearch — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
-
-    /*
-     * No additional local variables beyond the shared instance fields being
-     * assigned. searchField, categoryCombo, dateFromPicker, and dateToPicker
-     * are directly assigned to their instance fields during initialization.
-     */
-
-    /**
-     * Initializes the panel layout and components for SEARCH mode.
-     *
-     * Arranges a text search field, category combo box, date range picker pair,
-     * and a Search/Clear button panel in a left-aligned FlowLayout. Each
-     * component is wrapped in a labeled panel via createLabeledComponent.
-     * The search field is pre-configured with a placeholder text and a preferred
-     * width of 200px.
-     *
-     * @param categories Array of category options for the category combo box.
-     */
+    // ===================================================================
+    // INITIALIZATION — SEARCH MODE
+    // ===================================================================
     private void initializeSearch(String[] categories) {
-        setLayout(new FlowLayout(FlowLayout.LEFT, 12, 10));
+        setLayout(new BorderLayout(0, 0));
         setOpaque(false);
+        setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
 
-        searchField = new UIInput(20);
-        searchField.setPreferredSize(new Dimension(200, 32));
+        JPanel mainBar = new JPanel(new BorderLayout(0, 0));
+        mainBar.setOpaque(true);
+        mainBar.setBackground(BAR_BG);
+        mainBar.setBorder(BorderFactory.createCompoundBorder(
+                new LineBorder(new Color(210, 215, 225), 1, true),
+                BorderFactory.createEmptyBorder(12, 16, 12, 16)));
+
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, H_GAP, 0));
+        row.setOpaque(false);
+
+        searchField = new UIInput(25);
+        searchField.setPreferredSize(new Dimension(220, FIELD_HEIGHT));
         searchField.setPlaceholder("Search reports...");
-        add(createLabeledComponent("Search:", searchField));
+        styleInputAsPill(searchField, SEARCH_COLOR);
+        addColorIndicator(row, searchField, SEARCH_COLOR, "Search");
+
+        timeFilterPanel = new TimeFilterPanel();
+        timeFilterPanel.setFilterType(TimeFilter.FilterType.SINGLE_YEAR);
+        addColorIndicator(row, timeFilterPanel, TIME_COLOR, "Period");
 
         categoryCombo = new UIComboBox<>(categories);
-        categoryCombo.setPreferredSize(new Dimension(comboBoxSizeWidth, 32));
-        add(createLabeledComponent("Category:", categoryCombo));
+        categoryCombo.setPreferredSize(new Dimension(150, FIELD_HEIGHT));
+        styleComboAsPill(categoryCombo, CATEGORY_COLOR);
+        addColorIndicator(row, categoryCombo, CATEGORY_COLOR, "Category");
 
-        dateFromPicker = new ModernDatePicker();
-        add(createLabeledComponent("From:", dateFromPicker));
+        mainBar.add(row, BorderLayout.WEST);
 
-        dateToPicker = new ModernDatePicker(new Date());
-        add(createLabeledComponent("To:", dateToPicker));
+        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, H_GAP, 0));
+        rightPanel.setOpaque(false);
 
-        add(createButtonPanel(false));
+        applyButton = createSolidPillButton("Search", SEARCH_COLOR);
+        applyButton.addActionListener(e -> notifySearch());
+        rightPanel.add(applyButton);
+
+        JButton clearBtn = createTextButton("Clear");
+        clearBtn.addActionListener(e -> notifyClearSearch());
+        rightPanel.add(clearBtn);
+
+        mainBar.add(rightPanel, BorderLayout.EAST);
+        add(mainBar, BorderLayout.CENTER);
     }
 
-    // -------------------------------------------------------------------------
-    // createButtonPanel — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
+    // ===================================================================
+    // COLOR-CODED PILL STYLING
+    // ===================================================================
+    private void addColorIndicator(JPanel container, JComponent component, Color color, String tooltip) {
+        JPanel wrapper = new JPanel(new BorderLayout(0, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(FIELD_BG);
+                g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, PILL_RADIUS, PILL_RADIUS);
+                g2.setColor(FIELD_BORDER);
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1, PILL_RADIUS, PILL_RADIUS);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        wrapper.setOpaque(false);
 
-    /*
-     * buttonPanel : JPanel
-     * Wrapper panel using FlowLayout (LEFT-aligned, 8px horizontal gap)
-     * with an empty border of 18px top, 10px left padding to vertically
-     * align buttons with their sibling labeled components.
-     * Holds applyButton and resetButton.
-     */
+        JPanel indicator = new JPanel();
+        indicator.setPreferredSize(new Dimension(4, FIELD_HEIGHT - 4));
+        indicator.setBackground(color);
+        indicator.setOpaque(true);
+        indicator.setBorder(BorderFactory.createEmptyBorder(2, 0, 2, 0));
 
-    /**
-     * Creates and returns a button panel containing the primary and secondary
-     * action buttons, configured for the specified mode.
-     *
-     * In DASHBOARD mode (isDashboardMode = true):
-     * - applyButton is labeled "Apply" with a blue PRIMARY style.
-     * - resetButton is labeled "Reset" with a white OUTLINED style.
-     * - Buttons dispatch to notifyApply() and notifyReset() respectively.
-     *
-     * In SEARCH mode (isDashboardMode = false):
-     * - applyButton is labeled "Search" with a blue PRIMARY style.
-     * - resetButton is labeled "Clear" with a white OUTLINED style.
-     * - Buttons dispatch to notifySearch() and notifyClearSearch() respectively.
-     *
-     * Both buttons are sized at 90x32 pixels and use UIConfig.BODY font.
-     *
-     * @param isDashboardMode true to configure for DASHBOARD mode;
-     *                        false to configure for SEARCH mode.
-     * @return A JPanel containing the configured action buttons.
-     */
-    private JPanel createButtonPanel(boolean isDashboardMode) {
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(18, 10, 0, 0));
+        wrapper.add(indicator, BorderLayout.WEST);
+        wrapper.add(component, BorderLayout.CENTER);
+        wrapper.setToolTipText(tooltip);
+        container.add(wrapper);
+    }
 
-        if (isDashboardMode) {
-            applyButton = new UIButton(
-                    "Apply",
-                    new Color(25, 118, 210),
-                    new Dimension(90, 32),
-                    UIConfig.BODY,
-                    8,
-                    UIButton.ButtonType.PRIMARY);
+    private void styleComboAsPill(UIComboBox<?> combo, Color accentColor) {
+        combo.setOpaque(true);
+        combo.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+        combo.setForeground(new Color(60, 60, 60));
+        combo.setForcePlainBackground(true);
 
-            resetButton = new UIButton(
-                    "Reset",
-                    Color.WHITE,
-                    new Dimension(90, 32),
-                    UIConfig.BODY,
-                    8,
-                    UIButton.ButtonType.OUTLINED);
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list,
+                    Object value,
+                    int index,
+                    boolean isSelected,
+                    boolean cellHasFocus) {
 
-            applyButton.addActionListener(e -> notifyApply());
-            resetButton.addActionListener(e -> notifyReset());
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
 
-            buttonPanel.add(applyButton);
-            buttonPanel.add(resetButton);
-        } else {
-            applyButton = new UIButton(
-                    "Search",
-                    new Color(25, 118, 210),
-                    new Dimension(90, 32),
-                    UIConfig.BODY,
-                    8,
-                    UIButton.ButtonType.PRIMARY);
+                label.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+                label.setBorder(BorderFactory.createEmptyBorder(2, 10, 2, 4));
 
-            resetButton = new UIButton(
-                    "Clear",
-                    Color.WHITE,
-                    new Dimension(90, 32),
-                    UIConfig.BODY,
-                    8,
-                    UIButton.ButtonType.OUTLINED);
+                if (value != null && value.toString().startsWith("All ")) {
+                    label.setForeground(new Color(150, 150, 150));
+                    label.setFont(UIConfig.BODY.deriveFont(Font.ITALIC, 12f));
+                } else {
+                    label.setForeground(new Color(60, 60, 60));
+                }
 
-            applyButton.addActionListener(e -> notifySearch());
-            resetButton.addActionListener(e -> notifyClearSearch());
+                return label;
+            }
+        });
+        combo.setSelectedIndex(0);
+    }
 
-            buttonPanel.add(applyButton);
-            buttonPanel.add(resetButton);
+    private void styleInputAsPill(UIInput input, Color accentColor) {
+        input.setOpaque(true);
+        input.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+    }
+
+    // ===================================================================
+    // BUTTON FACTORIES
+    // ===================================================================
+    private JButton createMoreFiltersButton() {
+        JButton btn = new JButton("More ▼") {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                if (getModel().isPressed()) {
+                    g2.setColor(new Color(200, 205, 215));
+                } else if (getModel().isRollover()) {
+                    g2.setColor(new Color(220, 225, 235));
+                } else {
+                    g2.setColor(new Color(235, 238, 242));
+                }
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), PILL_RADIUS, PILL_RADIUS);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
+        btn.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 12f));
+        btn.setForeground(MORE_BTN_COLOR);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setOpaque(false);
+        btn.setBorder(BorderFactory.createEmptyBorder(6, 14, 6, 14));
+        btn.setPreferredSize(new Dimension(80, FIELD_HEIGHT));
+        return btn;
+    }
+
+    private JButton createTextButton(String text) {
+        UIButton btn = new UIButton(text, null, new Dimension(84, FIELD_HEIGHT),
+                new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.OUTLINED);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setFocusPainted(false);
+        btn.setForeground(MORE_BTN_COLOR);
+        btn.setContentAreaFilled(false);
+        btn.setBorderPainted(false);
+        btn.setFocusPainted(false);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                btn.setForeground(new Color(80, 90, 110));
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                btn.setForeground(MORE_BTN_COLOR);
+            }
+        });
+        return btn;
+    }
+
+    private UIButton createSolidPillButton(String text, Color bgColor) {
+        UIButton btn = new UIButton(text, bgColor, new Dimension(85, FIELD_HEIGHT),
+                new Font("Arial", Font.PLAIN, 12), PILL_RADIUS, UIButton.ButtonType.PRIMARY);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.setFocusPainted(false);
+        return btn;
+    }
+
+    // ===================================================================
+    // ACTIVE FILTER CHIPS
+    // ===================================================================
+    private void updateActiveChips() {
+        activeFiltersChips.removeAll();
+
+        String timeDesc = timeFilterPanel.getFilterDescription();
+        if (!timeDesc.equals(String.valueOf(Calendar.getInstance().get(Calendar.YEAR)))) {
+            activeFiltersChips.add(createFilterChip(timeDesc, TIME_COLOR, () -> {
+                timeFilterPanel.reset();
+                updateActiveChips();
+            }));
         }
 
-        return buttonPanel;
+        String cat = (String) categoryCombo.getSelectedItem();
+        if (cat != null && !cat.startsWith("All ")) {
+            activeFiltersChips.add(createFilterChip(cat, CATEGORY_COLOR, () -> {
+                categoryCombo.setSelectedIndex(0);
+                updateActiveChips();
+            }));
+        }
+
+        if (advancedFiltersVisible) {
+            String purok = (String) purokCombo.getSelectedItem();
+            if (purok != null && !purok.startsWith("All ")) {
+                activeFiltersChips.add(createFilterChip(purok, PUROK_COLOR, () -> {
+                    purokCombo.setSelectedIndex(0);
+                    updateActiveChips();
+                }));
+            }
+
+            String status = (String) statusCombo.getSelectedItem();
+            if (status != null && !status.startsWith("All ")) {
+                activeFiltersChips.add(createFilterChip(status, STATUS_COLOR, () -> {
+                    statusCombo.setSelectedIndex(0);
+                    updateActiveChips();
+                }));
+            }
+        }
+
+        activeFiltersChips.setVisible(activeFiltersChips.getComponentCount() > 0);
+        activeFiltersChips.revalidate();
+        activeFiltersChips.repaint();
     }
 
-    // -------------------------------------------------------------------------
-    // createLabeledComponent — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
+    private JPanel createFilterChip(String text, Color color, Runnable onRemove) {
+        JPanel chip = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        chip.setOpaque(false);
 
-    /*
-     * panel : JPanel
-     * Wrapper panel using BorderLayout with 3px horizontal and vertical
-     * gaps. Holds the label (NORTH) and the provided component (CENTER).
-     *
-     * label : JLabel
-     * Displays the provided labelText above the component using
-     * UIConfig.BODY font in muted gray color (100, 100, 100).
-     */
+        JPanel rounded = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0)) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(color);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+        rounded.setOpaque(false);
+        rounded.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 8));
 
-    /**
-     * Creates and returns a labeled wrapper panel containing a descriptive
-     * label above the given component.
-     *
-     * The label is placed in the NORTH position and the component in the
-     * CENTER position of a BorderLayout panel, producing a vertically stacked
-     * label-above-input layout.
-     *
-     * @param labelText The text to display as the label above the component.
-     * @param component The Swing component to place below the label.
-     * @return A JPanel with the label stacked above the component.
-     */
-    private JPanel createLabeledComponent(String labelText, JComponent component) {
-        JPanel panel = new JPanel(new BorderLayout(3, 3));
-        panel.setOpaque(false);
+        JLabel label = new JLabel(text);
+        label.setFont(UIConfig.BODY.deriveFont(Font.PLAIN, 11f));
+        label.setForeground(Color.WHITE);
+        rounded.add(label);
 
-        JLabel label = new JLabel(labelText);
-        label.setFont(UIConfig.BODY);
-        label.setForeground(new Color(100, 100, 100));
+        JLabel remove = new JLabel("×");
+        remove.setFont(UIConfig.BODY.deriveFont(Font.BOLD, 13f));
+        remove.setForeground(new Color(255, 255, 255, 180));
+        remove.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        remove.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                onRemove.run();
+            }
 
-        panel.add(label, BorderLayout.NORTH);
-        panel.add(component, BorderLayout.CENTER);
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                remove.setForeground(Color.WHITE);
+            }
 
-        return panel;
+            @Override
+            public void mouseExited(MouseEvent e) {
+                remove.setForeground(new Color(255, 255, 255, 180));
+            }
+        });
+        rounded.add(remove);
+
+        chip.add(rounded);
+        return chip;
     }
 
-    // =========================================================================
-    // NOTIFICATION METHODS
-    // =========================================================================
+    // ===================================================================
+    // INTERACTION
+    // ===================================================================
+    private void toggleAdvancedFilters() {
+        advancedFiltersVisible = !advancedFiltersVisible;
+        moreFiltersButton.setText(advancedFiltersVisible ? "Less ▲" : "More ▼");
+        advancedFiltersRow.setVisible(advancedFiltersVisible);
 
-    // -------------------------------------------------------------------------
-    // notifyApply — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
+        advancedFiltersRow.revalidate();
+        Container mainBar = advancedFiltersRow.getParent();
+        if (mainBar != null) {
+            mainBar.revalidate();
+            mainBar.repaint();
+        }
+        this.revalidate();
+        this.repaint();
+        Container parent = getParent();
+        if (parent != null) {
+            parent.revalidate();
+            parent.repaint();
+        }
+    }
 
-    /*
-     * fromDate : Date
-     * The currently selected start date retrieved from dateFromPicker.
-     *
-     * toDate : Date
-     * The currently selected end date retrieved from dateToPicker.
-     */
-
-    /**
-     * Collects the current filter values and dispatches them to the
-     * FilterListener via onApply if a listener is registered.
-     *
-     * Reads the selected dates from both date pickers and the selected items
-     * from the category, purok, and status combo boxes.
-     */
+    // ===================================================================
+    // NOTIFICATION
+    // ===================================================================
     private void notifyApply() {
         if (filterListener != null) {
-            Date fromDate = dateFromPicker.getDate();
-            Date toDate = dateToPicker.getDate();
-
             filterListener.onApply(
-                    fromDate,
-                    toDate,
+                    timeFilterPanel.getStartDate(),
+                    timeFilterPanel.getEndDate(),
                     (String) categoryCombo.getSelectedItem(),
                     (String) purokCombo.getSelectedItem(),
                     (String) statusCombo.getSelectedItem());
         }
     }
 
-    // -------------------------------------------------------------------------
-    // notifyReset — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
-
-    /*
-     * today : Date
-     * A new Date instance representing the current system date and time,
-     * used to reset both date pickers back to today.
-     */
-
-    /**
-     * Resets all DASHBOARD mode filter components to their default state and
-     * notifies the FilterListener via onReset if a listener is registered.
-     *
-     * Both date pickers are reset to today's date. All three combo boxes are
-     * reset to their first item (index 0).
-     */
     private void notifyReset() {
-        Date today = new Date();
-        dateFromPicker.setDate(today);
-        dateToPicker.setDate(today);
-
+        timeFilterPanel.reset();
         categoryCombo.setSelectedIndex(0);
-        purokCombo.setSelectedIndex(0);
-        statusCombo.setSelectedIndex(0);
-
-        if (filterListener != null) {
+        if (purokCombo != null)
+            purokCombo.setSelectedIndex(0);
+        if (statusCombo != null)
+            statusCombo.setSelectedIndex(0);
+        if (advancedFiltersVisible)
+            toggleAdvancedFilters();
+        updateActiveChips();
+        if (filterListener != null)
             filterListener.onReset();
-        }
     }
 
-    /**
-     * Collects the current search values and dispatches them to the
-     * SearchListener via onSearch if a listener is registered.
-     *
-     * Reads the search text from the search field, the selected category from
-     * the category combo box, and the selected dates from both date pickers.
-     */
     private void notifySearch() {
         if (searchListener != null) {
             searchListener.onSearch(
                     searchField.getValue(),
                     (String) categoryCombo.getSelectedItem(),
-                    dateFromPicker.getDate(),
-                    dateToPicker.getDate());
+                    timeFilterPanel.getStartDate(),
+                    timeFilterPanel.getEndDate());
         }
     }
 
-    // -------------------------------------------------------------------------
-    // notifyClearSearch — METHOD-LEVEL VARIABLES
-    // -------------------------------------------------------------------------
-
-    /*
-     * today : Date
-     * A new Date instance representing the current system date and time,
-     * used to reset both date pickers back to today.
-     */
-
-    /**
-     * Resets all SEARCH mode filter components to their default state and
-     * notifies the SearchListener via onClearSearch if a listener is registered.
-     *
-     * The search field is cleared, both date pickers are reset to today's date,
-     * and the category combo box is reset to its first item (index 0).
-     */
     private void notifyClearSearch() {
         searchField.setText("");
-
-        Date today = new Date();
-        dateFromPicker.setDate(today);
-        dateToPicker.setDate(today);
-
+        timeFilterPanel.reset();
         categoryCombo.setSelectedIndex(0);
-
-        if (searchListener != null) {
+        if (searchListener != null)
             searchListener.onClearSearch();
-        }
     }
 
-    // =========================================================================
+    // ===================================================================
     // GETTERS
-    // =========================================================================
-
-    /**
-     * Returns the operational mode this panel was constructed with.
-     *
-     * @return The current Mode (DASHBOARD or SEARCH).
-     */
-    public Mode getCurrentMode() {
-        return currentMode;
+    // ===================================================================
+    public TimeFilterPanel getDateFromPicker() {
+        return timeFilterPanel;
     }
 
-    /**
-     * Returns the date picker for the start of the filter date range.
-     *
-     * @return The ModernDatePicker instance for the "From" date.
-     */
-    public ModernDatePicker getDateFromPicker() {
-        return dateFromPicker;
+    public TimeFilterPanel getDateToPicker() {
+        return timeFilterPanel;
     }
 
-    /**
-     * Returns the date picker for the end of the filter date range.
-     *
-     * @return The ModernDatePicker instance for the "To" date.
-     */
-    public ModernDatePicker getDateToPicker() {
-        return dateToPicker;
-    }
-
-    /**
-     * Returns the category combo box.
-     *
-     * @return The UIComboBox instance for category selection.
-     */
     public UIComboBox<String> getCategoryCombo() {
         return categoryCombo;
     }
 
-    /**
-     * Returns the purok combo box. Available in DASHBOARD mode only.
-     *
-     * @return The UIComboBox instance for purok selection, or null if in
-     *         SEARCH mode.
-     */
     public UIComboBox<String> getPurokCombo() {
         return purokCombo;
     }
 
-    /**
-     * Returns the status combo box. Available in DASHBOARD mode only.
-     *
-     * @return The UIComboBox instance for status selection, or null if in
-     *         SEARCH mode.
-     */
     public UIComboBox<String> getStatusCombo() {
         return statusCombo;
     }
 
-    /**
-     * Returns the search input field. Available in SEARCH mode only.
-     *
-     * @return The UIInput instance for the search field, or null if in
-     *         DASHBOARD mode.
-     */
     public UIInput getSearchField() {
         return searchField;
     }
 
-    /**
-     * Returns the currently selected start date as a formatted string.
-     *
-     * @return A String representation of the "From" date from the date picker.
-     */
     public String getFromDateString() {
-        return dateFromPicker.getDateString();
+        return new java.text.SimpleDateFormat("MM/dd/yyyy").format(timeFilterPanel.getStartDate());
     }
 
-    /**
-     * Returns the currently selected end date as a formatted string.
-     *
-     * @return A String representation of the "To" date from the date picker.
-     */
     public String getToDateString() {
-        return dateToPicker.getDateString();
+        return new java.text.SimpleDateFormat("MM/dd/yyyy").format(timeFilterPanel.getEndDate());
     }
 
-    /**
-     * Returns the current text value from the search input field.
-     * Returns an empty string if the search field has not been initialized
-     * (i.e., the panel is in DASHBOARD mode).
-     *
-     * @return The search text string, or an empty string if searchField is null.
-     */
     public String getSearchText() {
         return searchField != null ? searchField.getValue() : "";
+    }
+
+    public TimeFilter getTimeFilter() {
+        return timeFilterPanel.getTimeFilter();
+    }
+
+    public String getTimeFilterDescription() {
+        return timeFilterPanel.getFilterDescription();
+    }
+
+    public Mode getCurrentMode() {
+        return currentMode;
     }
 }
