@@ -2,6 +2,8 @@ package services.controller;
 
 import java.sql.Connection;
 
+import javax.swing.JOptionPane;
+
 import config.database.DBConnection;
 import config.database.DBCreate;
 import config.database.TBCreate;
@@ -40,6 +42,10 @@ public class DatabaseController {
 
             System.out.println("[DatabaseController] Database initialization complete!");
         } catch (Exception e) {
+            JOptionPane.showMessageDialog(null,
+                    "Exception: Database initialization have failed!\nPlease check your database connection.",
+                    "Database Exception",
+                    JOptionPane.WARNING_MESSAGE);
             System.err.println("[DatabaseController] ERROR: Failed to initialize database!");
             e.printStackTrace();
         }
