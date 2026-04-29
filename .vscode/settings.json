@@ -1,6 +1,10 @@
 {
     "java.project.referencedLibraries": [
-        "c:\\Users\\Ren Josh\\Downloads\\mysqljdbcdriver\\mysql-connector-j-9.6.0.jar"
+        "c:\\Users\\Ren Josh\\Downloads\\mysqljdbcdriver\\mysql-connector-j-9.6.0.jar",
+        "c:\\Users\\Ren Josh\\Downloads\\angus-mail-2.0.3.jar",
+        "c:\\Users\\Ren Josh\\Downloads\\jakarta.mail-api-2.1.3.jar",
+        "c:\\Users\\Ren Josh\\Downloads\\angus-activation-2.0.1.jar",
+        "c:\\Users\\Ren Josh\\Downloads\\jakarta.activation-api-2.1.3.jar"
     ],
     "java.project.sourcePaths": [
         ".",

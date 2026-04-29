@@ -1,513 +1,641 @@
 package features.viewing;
 
+import app.E_Report;
 import config.UIConfig;
 import config.database.DBConnection;
 import daos.GetComplaintDao;
-import features.ui.DashboardFormUtils;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dialog;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Image;
-import java.awt.Insets;
-import javax.swing.JDialog;
-import javax.swing.SwingUtilities;
+import models.ComplaintDetail;
+import models.ComplaintHistoryDetail;
+import services.controller.ComplaintStatusController;
 
-import app.E_Report;
-
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSeparator;
-import javax.swing.JTextArea;
-import javax.swing.SwingConstants;
-import models.ComplaintDetail;
-import models.ComplaintHistoryDetail;
 
 public class FullComplaintDisplayView extends JPanel {
 
-    private final Runnable backCallback;
+    private final E_Report app;
     private final String currentRole;
-    private final boolean canComment;
     private final boolean canUpdateStatus;
-    private final JLabel subjectValue;
-    private final JLabel statusValue;
-    private final JLabel typeValue;
-    private final JLabel dateValue;
-    private final JLabel streetValue;
-    private final JLabel purokValue;
-    private final JLabel coordinatesValue;
-    private final JTextArea detailsArea;
-    private final JLabel imageLabel;
-    private final JLabel imageMetaLabel;
-    private ImageIcon fullScreenImageIcon;
-    private final JComboBox<String> statusCombo;
-    private final JTextArea staffCommentArea;
-    private final JTextArea historyArea;
-    private int currentComplaintId = -1;
-    private E_Report app;
+
+    // Data
+    private int currentCdId = -1;
+    private ComplaintDetail currentComplaint;
+
+    // UI Components
+    private JLabel lblComplaintId, lblSubject, lblCategory, lblPurok, lblLocation, lblStatus, lblDateSubmitted;
+    private JTextArea txtDescription;
+    private JLabel lblPhoto;
+    private ImageIcon fullImageIcon;
+
+    // Update mode
+    private boolean isUpdateMode = false;
+    private JPanel updatePanel;
+    private JComboBox<String> cmbStatus;
+    private JTextArea txtProcessNotes;
+    private JLabel lblUpdatedBy, lblDateUpdated;
+
+    // Complaint Action (when Resolved)
+    private JPanel actionPanel;
+    private JTextField txtActionTaken, txtRecommendation, txtOIC, txtDateAssigned, txtResolutionDate;
+
+    // History
+    private JTextArea txtHistory;
+
+    // Footer
+    private JButton btnBack, btnUpdate, btnSave, btnCancel;
+
+    // Controller
+    private final ComplaintStatusController statusController;
 
     public FullComplaintDisplayView(E_Report app) {
         this.app = app;
+        this.currentComplaint = app.getCurrentComplaint();
+        this.currentRole = app.getUserSession() != null ? app.getUserSession().getRole() : "Resident";
+        this.canUpdateStatus = currentRole.toLowerCase().contains("secretary")
+                || currentRole.toLowerCase().contains("captain");
+        this.statusController = new ComplaintStatusController();
 
-        ComplaintDetail complaint = app.getCurrentComplaint();
-        String currentRole = app.getUserSession().getRole();
-
-        this.backCallback = () -> app.navigate(app.getReturnRoute());
-        this.currentRole = currentRole != null ? currentRole : "Resident";
-
-        String normalizedRole = this.currentRole.toLowerCase();
-        this.canComment = normalizedRole.contains("resident") || normalizedRole.contains("secretary");
-        this.canUpdateStatus = normalizedRole.contains("secretary") || normalizedRole.contains("captain");
-
+        setLayout(new BorderLayout());
         setOpaque(false);
-        setLayout(new BorderLayout(18, 18));
 
-        JPanel background = new JPanel(new BorderLayout(18, 18));
-        background.setOpaque(false);
-        background.setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+        add(createContentPanel(), BorderLayout.CENTER);
 
-        JPanel card = new JPanel(new BorderLayout(18, 18));
-        card.setOpaque(true);
-        card.setBackground(new Color(255, 255, 255, 245));
-        card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(18, 18, 18, 18)));
-
-        JPanel content = new JPanel(new GridBagLayout());
-        content.setOpaque(false);
-
-        JPanel leftColumn = new JPanel();
-        leftColumn.setOpaque(false);
-        leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
-        leftColumn.setBorder(BorderFactory.createEmptyBorder(10, 0, 0, 0));
-        leftColumn.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
-
-        subjectValue = createValueLabel();
-        statusValue = createValueLabel();
-        typeValue = createValueLabel();
-        dateValue = createValueLabel();
-        streetValue = createValueLabel();
-        purokValue = createValueLabel();
-        coordinatesValue = createValueLabel();
-
-        leftColumn.add(createSectionHeader("Complaint Overview"));
-        leftColumn.add(createInfoRow("Subject", subjectValue));
-        leftColumn.add(createInfoRow("Status", statusValue));
-        leftColumn.add(createInfoRow("Type", typeValue));
-
-        leftColumn.add(Box.createRigidArea(new Dimension(0, 16)));
-        leftColumn.add(createSectionHeader("Location & Timing"));
-        leftColumn.add(createInfoRow("Date/Time", dateValue));
-        leftColumn.add(createInfoRow("Street", streetValue));
-        leftColumn.add(createInfoRow("Purok", purokValue));
-        leftColumn.add(createInfoRow("Coordinates", coordinatesValue));
-
-        leftColumn.add(Box.createRigidArea(new Dimension(0, 24)));
-        leftColumn.add(createSectionHeader("Description"));
-        detailsArea = new JTextArea();
-        detailsArea.setEditable(false);
-        detailsArea.setLineWrap(true);
-        detailsArea.setWrapStyleWord(true);
-        detailsArea.setFont(UIConfig.BODY);
-        detailsArea.setBackground(UIConfig.BG_LIGHT);
-        detailsArea.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(14, 14, 14, 14)));
-        detailsArea.setPreferredSize(new Dimension(0, 180));
-        detailsArea.setMinimumSize(new Dimension(0, 180));
-        JScrollPane detailsScroll = new JScrollPane(detailsArea);
-        detailsScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
-        detailsScroll.setPreferredSize(new Dimension(0, 180));
-        leftColumn.add(detailsScroll);
-
-        JPanel rightColumn = new JPanel(new GridBagLayout());
-        rightColumn.setOpaque(false);
-        rightColumn.setBorder(BorderFactory.createEmptyBorder(0, 10, 0, 0));
-
-        JPanel imageCard = new JPanel(new BorderLayout());
-        imageCard.setOpaque(true);
-        imageCard.setBackground(new Color(248, 250, 253));
-        imageCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
-        imageCard.setMaximumSize(new Dimension(Integer.MAX_VALUE, 340));
-
-        JLabel previewTitle = new JLabel("Evidence Photo");
-        previewTitle.setFont(UIConfig.INPUT_TITLE);
-        previewTitle.setForeground(UIConfig.TEXT_PRIMARY);
-        imageCard.add(previewTitle, BorderLayout.NORTH);
-
-        imageLabel = new JLabel("No image available", SwingConstants.CENTER);
-        imageLabel.setPreferredSize(new Dimension(0, 280));
-        imageLabel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 280));
-        imageLabel.setOpaque(true);
-        imageLabel.setBackground(UIConfig.BG_LIGHT);
-        imageLabel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
-                BorderFactory.createEmptyBorder(14, 14, 14, 14)));
-        imageCard.add(imageLabel, BorderLayout.CENTER);
-
-        imageMetaLabel = new JLabel("", SwingConstants.CENTER);
-        imageMetaLabel.setFont(UIConfig.CAPTION);
-        imageMetaLabel.setForeground(UIConfig.TEXT_SECONDARY);
-        imageMetaLabel.setBorder(BorderFactory.createEmptyBorder(12, 8, 0, 8));
-
-        JButton fullImageButton = new JButton("View Full Image");
-        fullImageButton.setFont(UIConfig.BTN_SECONDARY_FONT);
-        fullImageButton.setBackground(new Color(40, 120, 240));
-        fullImageButton.setForeground(Color.WHITE);
-        fullImageButton.setFocusable(false);
-        fullImageButton.addActionListener(e -> showFullScreenImage());
-        JPanel imageFooter = new JPanel(new BorderLayout());
-        imageFooter.setOpaque(false);
-        imageFooter.add(imageMetaLabel, BorderLayout.CENTER);
-        imageFooter.add(fullImageButton, BorderLayout.EAST);
-        imageCard.add(imageFooter, BorderLayout.SOUTH);
-
-        GridBagConstraints rightGbc = new GridBagConstraints();
-        rightGbc.gridx = 0;
-        rightGbc.gridy = 0;
-        rightGbc.weightx = 1.0;
-        rightGbc.weighty = 0.40;
-        rightGbc.fill = GridBagConstraints.BOTH;
-        rightGbc.anchor = GridBagConstraints.NORTH;
-        rightGbc.insets = new Insets(0, 0, 16, 0);
-        rightColumn.add(imageCard, rightGbc);
-
-        statusCombo = new JComboBox<>(new String[] { "Pending", "In Progress", "Resolved", "On Hold", "Closed" });
-        statusCombo.setFont(UIConfig.BODY);
-        statusCombo.setEnabled(canUpdateStatus);
-        statusCombo.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
-
-        staffCommentArea = new JTextArea(6, 1);
-        staffCommentArea.setFont(UIConfig.BODY);
-        staffCommentArea.setLineWrap(true);
-        staffCommentArea.setWrapStyleWord(true);
-        staffCommentArea.setEditable(canComment);
-        staffCommentArea.setBackground(canComment ? UIConfig.BG_LIGHT : new Color(245, 245, 245));
-
-        historyArea = new JTextArea();
-        historyArea.setEditable(false);
-        historyArea.setLineWrap(true);
-        historyArea.setWrapStyleWord(true);
-        historyArea.setFont(UIConfig.CAPTION);
-        historyArea.setBackground(UIConfig.BG_LIGHT);
-
-        JPanel updateCard = new JPanel();
-        updateCard.setLayout(new BoxLayout(updateCard, BoxLayout.Y_AXIS));
-        updateCard.setOpaque(true);
-        updateCard.setBackground(new Color(255, 255, 255, 235));
-        updateCard.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(235, 238, 244), 1, true),
-                BorderFactory.createEmptyBorder(16, 16, 16, 16)));
-
-        JLabel progressTitle = new JLabel(canComment ? "Update / Comment" : "Report Progress");
-        progressTitle.setFont(UIConfig.H3);
-        progressTitle.setForeground(UIConfig.TEXT_PRIMARY);
-        updateCard.add(progressTitle);
-        updateCard.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        updateCard.add(createSectionHeader("Update Details"));
-
-        JPanel statusRow = new JPanel(new BorderLayout(8, 8));
-        statusRow.setOpaque(false);
-        JLabel statusLabel = new JLabel("Status");
-        statusLabel.setFont(UIConfig.INPUT_TITLE);
-        statusLabel.setForeground(UIConfig.TEXT_SECONDARY);
-        statusRow.add(statusLabel, BorderLayout.WEST);
-        statusRow.add(statusCombo, BorderLayout.CENTER);
-        updateCard.add(statusRow);
-        updateCard.add(Box.createRigidArea(new Dimension(0, 12)));
-
-        JLabel commentLabel = new JLabel(canComment ? "Comment" : "Recent activity notes are internal.");
-        commentLabel.setFont(UIConfig.INPUT_TITLE);
-        commentLabel.setForeground(UIConfig.TEXT_SECONDARY);
-        updateCard.add(commentLabel);
-        updateCard.add(Box.createRigidArea(new Dimension(0, 6)));
-        JScrollPane commentScroll = new JScrollPane(staffCommentArea);
-        commentScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
-        commentScroll.setPreferredSize(new Dimension(0, 140));
-        updateCard.add(commentScroll);
-
-        if (canComment) {
-            JButton saveButton = new JButton(canUpdateStatus ? "Save Update" : "Add Comment");
-            saveButton.setFont(UIConfig.BTN_SECONDARY_FONT);
-            saveButton.setBackground(UIConfig.PRIMARY);
-            saveButton.setForeground(Color.WHITE);
-            saveButton.setFocusable(false);
-            saveButton.setAlignmentX(RIGHT_ALIGNMENT);
-            saveButton.addActionListener(e -> saveStatusUpdate());
-            updateCard.add(Box.createRigidArea(new Dimension(0, 12)));
-            updateCard.add(saveButton);
+        if (currentComplaint != null) {
+            loadComplaint(currentComplaint);
         }
-
-        updateCard.add(Box.createRigidArea(new Dimension(0, 18)));
-        updateCard.add(createSectionHeader("Timeline"));
-        JScrollPane historyScroll = new JScrollPane(historyArea);
-        historyScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
-        historyScroll.setPreferredSize(new Dimension(0, 220));
-        updateCard.add(historyScroll);
-
-        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        actions.setOpaque(false);
-        JButton backButton = new JButton("Back");
-        backButton.setFont(UIConfig.BTN_SECONDARY_FONT);
-        backButton.setBackground(UIConfig.SECONDARY);
-        backButton.setForeground(Color.WHITE);
-        backButton.setFocusable(false);
-        backButton.setBorder(BorderFactory.createEmptyBorder(12, 24, 12, 24));
-        backButton.setPreferredSize(UIConfig.BTN_SECONDARY);
-        backButton.addActionListener(e -> {
-            if (backCallback != null) {
-                backCallback.run();
-            }
-        });
-        actions.add(backButton);
-
-        rightGbc.gridy = 1;
-        rightGbc.weighty = 0.50;
-        rightGbc.fill = GridBagConstraints.BOTH;
-        rightGbc.insets = new Insets(0, 0, 16, 0);
-        rightColumn.add(updateCard, rightGbc);
-
-        rightGbc.gridy = 2;
-        rightGbc.weighty = 0;
-        rightGbc.fill = GridBagConstraints.HORIZONTAL;
-        rightGbc.anchor = GridBagConstraints.SOUTHEAST;
-        rightGbc.insets = new Insets(0, 0, 0, 0);
-        rightColumn.add(actions, rightGbc);
-
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.weightx = 0.70;
-        gbc.weighty = 1.0;
-        gbc.fill = GridBagConstraints.BOTH;
-        gbc.anchor = GridBagConstraints.NORTHWEST;
-        gbc.insets = new java.awt.Insets(0, 0, 0, 12);
-        content.add(leftColumn, gbc);
-
-        gbc.gridx = 1;
-        gbc.gridy = 0;
-        gbc.weightx = 0.30;
-        gbc.insets = new java.awt.Insets(0, 0, 0, 0);
-        content.add(rightColumn, gbc);
-
-        card.add(content, BorderLayout.CENTER);
-        background.add(card, BorderLayout.CENTER);
-        add(background, BorderLayout.CENTER);
-
-        DashboardFormUtils.applyPoppinsFontRecursively(this);
-        loadComplaint(complaint);
     }
 
-    private void showFullScreenImage() {
-        if (fullScreenImageIcon == null) {
-            JOptionPane.showMessageDialog(this,
-                    "No image available for fullscreen viewing.",
-                    "No Image",
-                    JOptionPane.INFORMATION_MESSAGE);
+    // ==================== MAIN CONTENT ====================
+
+    private JPanel createContentPanel() {
+        JPanel wrapper = new JPanel(new BorderLayout(0, 12));
+        wrapper.setOpaque(false);
+
+        // Card
+        JPanel card = new JPanel(new BorderLayout(18, 0));
+        card.setOpaque(true);
+        card.setBackground(new Color(255, 255, 255, 235));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
+                new EmptyBorder(20, 24, 20, 24)));
+
+        // Left: Complaint Info
+        JPanel left = createLeftPanel();
+        card.add(left, BorderLayout.WEST);
+
+        // Right: Map + History + Photo
+        JPanel right = createRightPanel();
+        card.add(right, BorderLayout.CENTER);
+
+        wrapper.add(card, BorderLayout.CENTER);
+
+        // Footer buttons (always visible at bottom)
+        wrapper.add(createFooterPanel(), BorderLayout.SOUTH);
+
+        return wrapper;
+    }
+
+    // ==================== LEFT PANEL (Complaint Info) ====================
+
+    private JPanel createLeftPanel() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setPreferredSize(new Dimension(420, 0));
+
+        // Title
+        JLabel title = new JLabel("Complaint Details");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        title.setForeground(UIConfig.TEXT_PRIMARY);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(20));
+
+        // Info grid
+        panel.add(createInfoRow("Complaint ID", lblComplaintId = new JLabel("—")));
+        panel.add(createInfoRow("Subject", lblSubject = new JLabel("—")));
+        panel.add(createInfoRow("Category", lblCategory = new JLabel("—")));
+        panel.add(createInfoRow("Purok", lblPurok = new JLabel("—")));
+        panel.add(createInfoRow("Location", lblLocation = new JLabel("—")));
+        panel.add(createInfoRow("Current Status", lblStatus = new JLabel("—")));
+        panel.add(createInfoRow("Date Submitted", lblDateSubmitted = new JLabel("—")));
+
+        panel.add(Box.createVerticalStrut(16));
+
+        // Description
+        JLabel descTitle = new JLabel("Description");
+        descTitle.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        descTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(descTitle);
+        panel.add(Box.createVerticalStrut(6));
+
+        txtDescription = new JTextArea(5, 30);
+        txtDescription.setEditable(false);
+        txtDescription.setLineWrap(true);
+        txtDescription.setWrapStyleWord(true);
+        txtDescription.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtDescription.setBackground(new Color(248, 249, 250));
+        txtDescription.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
+                new EmptyBorder(12, 12, 12, 12)));
+
+        JScrollPane descScroll = new JScrollPane(txtDescription);
+        descScroll.setBorder(null);
+        descScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        descScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
+        panel.add(descScroll);
+
+        panel.add(Box.createVerticalStrut(16));
+
+        // Photo thumbnail
+        lblPhoto = new JLabel("No photo attached", SwingConstants.CENTER);
+        lblPhoto.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblPhoto.setPreferredSize(new Dimension(200, 120));
+        lblPhoto.setMaximumSize(new Dimension(280, 160));
+        lblPhoto.setOpaque(true);
+        lblPhoto.setBackground(new Color(248, 249, 250));
+        lblPhoto.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        lblPhoto.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        lblPhoto.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                showFullImage();
+            }
+        });
+        panel.add(lblPhoto);
+
+        // Update section (hidden until Update clicked)
+        panel.add(Box.createVerticalStrut(16));
+        updatePanel = createUpdatePanel();
+        updatePanel.setVisible(false);
+        panel.add(updatePanel);
+
+        // Complaint Action (hidden unless Resolved)
+        actionPanel = createComplaintActionPanel();
+        actionPanel.setVisible(false);
+        panel.add(actionPanel);
+
+        panel.add(Box.createVerticalGlue());
+        return panel;
+    }
+
+    private JPanel createInfoRow(String label, JLabel value) {
+        JPanel row = new JPanel(new BorderLayout(0, 4));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lbl.setForeground(UIConfig.TEXT_SECONDARY);
+
+        value.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        value.setForeground(UIConfig.TEXT_PRIMARY);
+
+        row.add(lbl, BorderLayout.NORTH);
+        row.add(value, BorderLayout.CENTER);
+        return row;
+    }
+
+    // ==================== UPDATE PANEL ====================
+
+    private JPanel createUpdatePanel() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 232)),
+                new EmptyBorder(16, 0, 0, 0)));
+
+        JLabel title = new JLabel("Update Status");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        title.setForeground(UIConfig.TEXT_PRIMARY);
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(12));
+
+        // Status
+        JPanel statusRow = new JPanel(new BorderLayout(10, 0));
+        statusRow.setOpaque(false);
+        statusRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        statusRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 36));
+
+        JLabel lblStatus = new JLabel("New Status");
+        lblStatus.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lblStatus.setPreferredSize(new Dimension(90, 28));
+
+        cmbStatus = new JComboBox<>(new String[] { "Pending", "In Progress", "Resolved", "Rejected" });
+        cmbStatus.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        cmbStatus.addActionListener(e -> onStatusChanged());
+
+        statusRow.add(lblStatus, BorderLayout.WEST);
+        statusRow.add(cmbStatus, BorderLayout.CENTER);
+        panel.add(statusRow);
+        panel.add(Box.createVerticalStrut(10));
+
+        // Notes
+        JLabel notesLbl = new JLabel("Process / Notes");
+        notesLbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        notesLbl.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(notesLbl);
+        panel.add(Box.createVerticalStrut(4));
+
+        txtProcessNotes = new JTextArea(3, 22);
+        txtProcessNotes.setLineWrap(true);
+        txtProcessNotes.setWrapStyleWord(true);
+        txtProcessNotes.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        txtProcessNotes.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(190, 190, 190), 1, true),
+                new EmptyBorder(8, 8, 8, 8)));
+
+        JScrollPane notesScroll = new JScrollPane(txtProcessNotes);
+        notesScroll.setBorder(null);
+        notesScroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        notesScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        panel.add(notesScroll);
+        panel.add(Box.createVerticalStrut(8));
+
+        // Meta
+        JPanel meta = new JPanel(new GridLayout(1, 2, 10, 0));
+        meta.setOpaque(false);
+        meta.setAlignmentX(Component.LEFT_ALIGNMENT);
+        meta.setMaximumSize(new Dimension(Integer.MAX_VALUE, 22));
+
+        lblUpdatedBy = new JLabel("By: —");
+        lblUpdatedBy.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblUpdatedBy.setForeground(UIConfig.TEXT_SECONDARY);
+
+        lblDateUpdated = new JLabel("Date: —");
+        lblDateUpdated.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblDateUpdated.setForeground(UIConfig.TEXT_SECONDARY);
+
+        meta.add(lblUpdatedBy);
+        meta.add(lblDateUpdated);
+        panel.add(meta);
+
+        return panel;
+    }
+
+    // ==================== COMPLAINT ACTION PANEL ====================
+
+    private JPanel createComplaintActionPanel() {
+        JPanel panel = new JPanel();
+        panel.setOpaque(false);
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(220, 225, 232)),
+                new EmptyBorder(16, 0, 0, 0)));
+
+        JLabel title = new JLabel("Resolution Details");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 15));
+        title.setForeground(new Color(40, 167, 69));
+        title.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.add(title);
+        panel.add(Box.createVerticalStrut(10));
+
+        panel.add(createActionRow("Action Taken *", txtActionTaken = new JTextField()));
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(createActionRow("Recommendation", txtRecommendation = new JTextField()));
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(createActionRow("Officer in Charge", txtOIC = new JTextField()));
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(createActionRow("Date Assigned", txtDateAssigned = new JTextField()));
+        panel.add(Box.createVerticalStrut(8));
+        panel.add(createActionRow("Resolution Date", txtResolutionDate = new JTextField()));
+
+        return panel;
+    }
+
+    private JPanel createActionRow(String label, JTextField field) {
+        JPanel row = new JPanel(new BorderLayout(10, 0));
+        row.setOpaque(false);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        lbl.setPreferredSize(new Dimension(140, 26));
+
+        field.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        field.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(190, 190, 190), 1, true),
+                new EmptyBorder(6, 8, 6, 8)));
+
+        row.add(lbl, BorderLayout.WEST);
+        row.add(field, BorderLayout.CENTER);
+        return row;
+    }
+
+    // ==================== RIGHT PANEL (Map + History) ====================
+
+    private JPanel createRightPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 14));
+        panel.setOpaque(false);
+
+        // Map
+        JLabel mapTitle = new JLabel("Report Location");
+        mapTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
+        panel.add(mapTitle, BorderLayout.NORTH);
+
+        // Use your existing map panel or a placeholder
+        JPanel mapPlaceholder = new JPanel(new BorderLayout());
+        mapPlaceholder.setOpaque(true);
+        mapPlaceholder.setBackground(new Color(232, 234, 237));
+        mapPlaceholder.setBorder(BorderFactory.createLineBorder(new Color(200, 200, 200), 1, true));
+        mapPlaceholder.setPreferredSize(new Dimension(0, 280));
+
+        JLabel mapLabel = new JLabel("Map View", SwingConstants.CENTER);
+        mapLabel.setFont(new Font("Segoe UI", Font.PLAIN, 14));
+        mapLabel.setForeground(UIConfig.TEXT_SECONDARY);
+        mapPlaceholder.add(mapLabel, BorderLayout.CENTER);
+
+        // Coordinates label
+        JLabel lblCoords = new JLabel("Lat: —, Long: —", SwingConstants.CENTER);
+        lblCoords.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        lblCoords.setForeground(UIConfig.TEXT_SECONDARY);
+        lblCoords.setBorder(new EmptyBorder(6, 0, 6, 0));
+        mapPlaceholder.add(lblCoords, BorderLayout.SOUTH);
+
+        panel.add(mapPlaceholder, BorderLayout.CENTER);
+
+        // History timeline
+        panel.add(Box.createVerticalStrut(14), BorderLayout.SOUTH);
+        JPanel historyPanel = createHistoryPanel();
+        panel.add(historyPanel, BorderLayout.SOUTH);
+
+        return panel;
+    }
+
+    private JPanel createHistoryPanel() {
+        JPanel panel = new JPanel(new BorderLayout(0, 8));
+        panel.setOpaque(false);
+        panel.setPreferredSize(new Dimension(0, 200));
+
+        JLabel title = new JLabel("Status History");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        panel.add(title, BorderLayout.NORTH);
+
+        txtHistory = new JTextArea();
+        txtHistory.setEditable(false);
+        txtHistory.setLineWrap(true);
+        txtHistory.setWrapStyleWord(true);
+        txtHistory.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        txtHistory.setBackground(new Color(248, 249, 250));
+        txtHistory.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(220, 225, 232), 1, true),
+                new EmptyBorder(10, 10, 10, 10)));
+
+        JScrollPane scroll = new JScrollPane(txtHistory);
+        scroll.setBorder(null);
+        panel.add(scroll, BorderLayout.CENTER);
+
+        return panel;
+    }
+
+    // ==================== FOOTER ====================
+
+    private JPanel createFooterPanel() {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 0));
+        panel.setOpaque(false);
+        panel.setBorder(new EmptyBorder(12, 0, 0, 0));
+
+        btnBack = createFooterButton("← Back to Reports", UIConfig.SECONDARY);
+        btnUpdate = createFooterButton("Update Status", UIConfig.PRIMARY);
+        btnSave = createFooterButton("Save Update", new Color(40, 167, 69));
+        btnCancel = createFooterButton("Cancel", new Color(108, 117, 125));
+
+        btnBack.addActionListener(e -> app.navigate(app.getReturnRoute()));
+        btnUpdate.addActionListener(e -> enterUpdateMode());
+        btnSave.addActionListener(e -> saveUpdate());
+        btnCancel.addActionListener(e -> exitUpdateMode());
+
+        // Default: View mode
+        btnSave.setVisible(false);
+        btnCancel.setVisible(false);
+
+        panel.add(btnBack);
+        if (canUpdateStatus) {
+            panel.add(btnUpdate);
+        }
+        panel.add(btnSave);
+        panel.add(btnCancel);
+
+        return panel;
+    }
+
+    private JButton createFooterButton(String text, Color bg) {
+        JButton btn = new JButton(text);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        btn.setBackground(bg);
+        btn.setForeground(Color.WHITE);
+        btn.setOpaque(true);
+        btn.setFocusPainted(false);
+        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(255, 255, 255, 100), 1, true),
+                new EmptyBorder(10, 20, 10, 20)));
+        return btn;
+    }
+
+    // ==================== MODE SWITCHING ====================
+
+    private void enterUpdateMode() {
+        isUpdateMode = true;
+        updatePanel.setVisible(true);
+
+        lblUpdatedBy.setText("By: " + app.getCurrentUserFullName());
+        lblDateUpdated.setText("Date: " + new java.sql.Date(System.currentTimeMillis()));
+
+        btnUpdate.setVisible(false);
+        btnBack.setVisible(false);
+        btnSave.setVisible(true);
+        btnCancel.setVisible(true);
+
+        revalidate();
+        repaint();
+    }
+
+    private void exitUpdateMode() {
+        isUpdateMode = false;
+        updatePanel.setVisible(false);
+        actionPanel.setVisible(false);
+        txtProcessNotes.setText("");
+
+        btnUpdate.setVisible(true);
+        btnBack.setVisible(true);
+        btnSave.setVisible(false);
+        btnCancel.setVisible(false);
+
+        revalidate();
+        repaint();
+    }
+
+    private void onStatusChanged() {
+        String status = (String) cmbStatus.getSelectedItem();
+        boolean isResolved = "Resolved".equals(status);
+        actionPanel.setVisible(isResolved && isUpdateMode);
+        if (isResolved) {
+            txtOIC.setText(app.getCurrentUserFullName());
+            txtResolutionDate.setText(new java.sql.Date(System.currentTimeMillis()).toString());
+        }
+        revalidate();
+        repaint();
+    }
+
+    // ==================== SAVE ====================
+
+    private void saveUpdate() {
+        String newStatus = (String) cmbStatus.getSelectedItem();
+        String note = txtProcessNotes.getText().trim();
+
+        if (newStatus == null || newStatus.isBlank()) {
+            JOptionPane.showMessageDialog(this, "Please select a status.", "Required", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        boolean saved = statusController.updateComplaintStatus(
+                currentCdId, newStatus, note, app.getUserSession());
+
+        if (!saved) {
+            JOptionPane.showMessageDialog(this, "Failed to update status.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        if ("Resolved".equals(newStatus)) {
+            var action = buildComplaintAction();
+            if (action == null)
+                return; // Validation failed
+            // TODO: Save ComplaintAction to DB
+        }
+
+        JOptionPane.showMessageDialog(this, "Status updated successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        currentComplaint.setCurrentStatus(newStatus);
+        lblStatus.setText(newStatus);
+        loadHistory(currentCdId);
+        exitUpdateMode();
+    }
+
+    private models.ComplaintAction buildComplaintAction() {
+        String actionTaken = txtActionTaken.getText().trim();
+        if (actionTaken.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Action Taken is required for resolved complaints.", "Required",
+                    JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+
+        var action = new models.ComplaintAction();
+        action.setCD_ID(String.valueOf(currentCdId));
+        action.setActionTaken(actionTaken);
+        action.setRecommendation(txtRecommendation.getText().trim());
+        action.setOIC(txtOIC.getText().trim());
+
+        try {
+            String da = txtDateAssigned.getText().trim();
+            String rd = txtResolutionDate.getText().trim();
+            if (!da.isEmpty())
+                action.setDateTimeAssigned(Timestamp.valueOf(da + " 00:00:00"));
+            if (!rd.isEmpty())
+                action.setResolutionDateTime(Timestamp.valueOf(rd + " 00:00:00"));
+        } catch (IllegalArgumentException e) {
+            JOptionPane.showMessageDialog(this, "Invalid date. Use YYYY-MM-DD format.", "Invalid Date",
+                    JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+        return action;
+    }
+
+    // ==================== DATA LOADING ====================
+
+    public void loadComplaint(ComplaintDetail cd) {
+        if (cd == null)
+            return;
+
+        this.currentComplaint = cd;
+        this.currentCdId = cd.getComplaintId();
+
+        lblComplaintId.setText(String.valueOf(cd.getComplaintId()));
+        lblSubject.setText(safe(cd.getSubject()));
+        lblCategory.setText(safe(cd.getType()));
+        lblPurok.setText(safe(cd.getPurok()));
+        lblLocation.setText(safe(cd.getStreet()));
+        lblStatus.setText(safe(cd.getCurrentStatus()));
+        lblDateSubmitted.setText(cd.getDateTime() != null ? cd.getDateTime().toString() : "N/A");
+        txtDescription.setText(safe(cd.getDetails()));
+        cmbStatus.setSelectedItem(safe(cd.getCurrentStatus()));
+
+        // Photo
+        byte[] photo = cd.getPhotoAttachmentBytes();
+        if (photo != null && photo.length > 0) {
+            fullImageIcon = new ImageIcon(photo);
+            Image scaled = fullImageIcon.getImage().getScaledInstance(260, 160, Image.SCALE_SMOOTH);
+            lblPhoto.setIcon(new ImageIcon(scaled));
+            lblPhoto.setText("");
+        } else {
+            fullImageIcon = null;
+            lblPhoto.setIcon(null);
+            lblPhoto.setText("No photo attached");
+        }
+
+        loadHistory(cd.getComplaintId());
+    }
+
+    private void loadHistory(int complaintId) {
+        try (Connection con = DBConnection.connect()) {
+            List<ComplaintHistoryDetail> history = new GetComplaintDao().getComplaintHistory(con, complaintId);
+            if (history == null || history.isEmpty()) {
+                txtHistory.setText("No status updates yet.");
+                return;
+            }
+
+            StringBuilder sb = new StringBuilder();
+            for (ComplaintHistoryDetail h : history) {
+                sb.append("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+                sb.append("📅 ").append(h.getDateTimeUpdated()).append("\n");
+                sb.append("🔄 Status: ").append(h.getStatus()).append("\n");
+                sb.append("👤 By: ").append(h.getUpdatedBy()).append("\n");
+                if (h.getProcess() != null && !h.getProcess().isBlank()) {
+                    sb.append("📝 ").append(h.getProcess()).append("\n");
+                }
+                sb.append("\n");
+            }
+            txtHistory.setText(sb.toString());
+        } catch (SQLException e) {
+            txtHistory.setText("Unable to load history.");
+            e.printStackTrace();
+        }
+    }
+
+    private void showFullImage() {
+        if (fullImageIcon == null) {
+            JOptionPane.showMessageDialog(this, "No image available.", "No Image", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
         JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(this), "Evidence Photo",
                 Dialog.ModalityType.APPLICATION_MODAL);
-        JLabel imageView = new JLabel(fullScreenImageIcon);
-        imageView.setHorizontalAlignment(SwingConstants.CENTER);
-        imageView.setVerticalAlignment(SwingConstants.CENTER);
+        JLabel imgLabel = new JLabel(fullImageIcon);
+        imgLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
-        JScrollPane scrollPane = new JScrollPane(imageView);
-        scrollPane.setPreferredSize(new Dimension(950, 750));
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        JScrollPane scroll = new JScrollPane(imgLabel);
+        scroll.setPreferredSize(new Dimension(900, 700));
+        scroll.setBorder(BorderFactory.createEmptyBorder());
 
-        dialog.getContentPane().add(scrollPane, BorderLayout.CENTER);
+        dialog.add(scroll, BorderLayout.CENTER);
         dialog.pack();
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
-    private JPanel createSectionHeader(String title) {
-        JPanel header = new JPanel(new BorderLayout());
-        header.setOpaque(false);
-        header.setBorder(BorderFactory.createEmptyBorder(8, 0, 12, 0));
-
-        JLabel label = new JLabel(title);
-        label.setFont(UIConfig.INPUT_TITLE);
-        label.setForeground(UIConfig.TEXT_PRIMARY);
-
-        JSeparator separator = new JSeparator(SwingConstants.HORIZONTAL);
-        separator.setForeground(new Color(220, 225, 232));
-
-        header.add(label, BorderLayout.NORTH);
-        header.add(separator, BorderLayout.SOUTH);
-        return header;
-    }
-
-    private JPanel createInfoRow(String label, JLabel valueLabel) {
-        JPanel row = new JPanel();
-        row.setOpaque(false);
-        row.setLayout(new BoxLayout(row, BoxLayout.Y_AXIS));
-
-        JLabel lbl = new JLabel(label);
-        lbl.setFont(UIConfig.INPUT_TITLE);
-        lbl.setForeground(UIConfig.TEXT_SECONDARY);
-
-        valueLabel.setFont(UIConfig.BODY);
-        valueLabel.setForeground(UIConfig.TEXT_PRIMARY);
-        valueLabel.setAlignmentX(LEFT_ALIGNMENT);
-
-        row.add(lbl);
-        row.add(Box.createRigidArea(new Dimension(0, 6)));
-        row.add(valueLabel);
-        row.add(Box.createRigidArea(new Dimension(0, 12)));
-        row.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-        return row;
-    }
-
-    private JLabel createValueLabel() {
-        JLabel label = new JLabel("");
-        label.setFont(UIConfig.BODY);
-        label.setForeground(UIConfig.TEXT_PRIMARY);
-        return label;
-    }
-
-    private void loadHistory(int complaintId) {
-        List<ComplaintHistoryDetail> history;
-        try (Connection con = DBConnection.connect()) {
-            history = new GetComplaintDao().getComplaintHistory(con, complaintId);
-        } catch (SQLException e) {
-            historyArea.setText("Unable to load history.");
-            e.printStackTrace();
-            return;
-        }
-
-        if (history == null || history.isEmpty()) {
-            historyArea.setText(canUpdateStatus ? "No staff updates yet." : "No progress updates available.");
-            return;
-        }
-
-        StringBuilder timeline = new StringBuilder();
-        for (ComplaintHistoryDetail entry : history) {
-            timeline.append("• ");
-            timeline.append(formatTimestamp(entry.getDateTimeUpdated()));
-            timeline.append(" — ");
-            timeline.append(safeString(entry.getStatus()));
-            timeline.append(" (").append(safeString(entry.getUpdatedBy())).append(")\n");
-            timeline.append(safeString(entry.getProcess())).append("\n\n");
-        }
-        historyArea.setText(timeline.toString().trim());
-    }
-
-    private void saveStatusUpdate() {
-        if (!canComment)
-            return;
-
-        String selectedStatus = (String) statusCombo.getSelectedItem();
-        String note = staffCommentArea.getText().trim();
-
-        if (selectedStatus == null || selectedStatus.isBlank()) {
-            JOptionPane.showMessageDialog(this, "Please choose a status.", "Required", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Use your new controller
-        services.controller.ComplaintStatusController ctrl = new services.controller.ComplaintStatusController();
-        boolean saved = ctrl.updateComplaintStatus(currentComplaintId, selectedStatus, note, app.getUserSession());
-
-        if (saved) {
-            JOptionPane.showMessageDialog(this, "Status updated.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            statusValue.setText(selectedStatus);
-            loadHistory(currentComplaintId);
-            staffCommentArea.setText("");
-        } else {
-            JOptionPane.showMessageDialog(this, "Update failed.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    private String formatTimestamp(Timestamp ts) {
-        if (ts == null) {
-            return "Unknown time";
-        }
-        return ts.toString();
-    }
-
-    public void loadComplaint(ComplaintDetail cd) {
-        if (cd == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Complaint data is not available.",
-                    "Load Error",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        this.currentComplaintId = cd.getComplaintId();
-        subjectValue.setText(safeString(cd.getSubject()));
-        statusValue.setText(safeString(cd.getCurrentStatus()));
-        typeValue.setText(safeString(cd.getType()));
-        dateValue.setText(cd.getDateTime() != null ? cd.getDateTime().toString() : "N/A");
-        streetValue.setText(safeString(cd.getStreet()));
-        purokValue.setText(safeString(cd.getPurok()));
-        coordinatesValue.setText(String.format("Lat %.6f, Long %.6f", cd.getLatitude(), cd.getLongitude()));
-        detailsArea.setText(safeString(cd.getDetails()));
-        statusCombo.setSelectedItem(safeString(cd.getCurrentStatus()));
-        if (!canComment) {
-            staffCommentArea.setText("");
-        }
-        loadHistory(cd.getComplaintId());
-
-        byte[] photoBytes = cd.getPhotoAttachmentBytes();
-        if (photoBytes != null && photoBytes.length > 0) {
-            fullScreenImageIcon = new ImageIcon(photoBytes);
-            Image image = fullScreenImageIcon.getImage().getScaledInstance(420, 420, Image.SCALE_SMOOTH);
-            imageLabel.setIcon(new ImageIcon(image));
-            imageLabel.setText("");
-        } else {
-            fullScreenImageIcon = null;
-            imageLabel.setIcon(null);
-            imageLabel.setText("No image available");
-        }
-
-        StringBuilder metaText = new StringBuilder();
-        if (cd.getPhotoName() != null && !cd.getPhotoName().isBlank()) {
-            metaText.append(cd.getPhotoName());
-        }
-        if (cd.getPhotoType() != null && !cd.getPhotoType().isBlank()) {
-            if (metaText.length() > 0) {
-                metaText.append(" • ");
-            }
-            metaText.append(cd.getPhotoType());
-        }
-        if (cd.getPhotoSize() != null) {
-            if (metaText.length() > 0) {
-                metaText.append(" • ");
-            }
-            metaText.append(cd.getPhotoSize()).append(" bytes");
-        }
-        imageMetaLabel.setText(metaText.length() > 0 ? metaText.toString() : "");
-    }
-
-    private String safeString(String value) {
-        return value != null ? value : "";
+    private String safe(String v) {
+        return v != null ? v : "—";
     }
 }

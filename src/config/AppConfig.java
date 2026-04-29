@@ -9,6 +9,14 @@ public class AppConfig {
     // Database Driver
     public static final String DB_DRIVER = "com.mysql.cj.jdbc.Driver";
 
+    // ==================== SMTP / Email Configuration ====================
+    public static final String SMTP_HOST = "smtp.gmail.com";
+    public static final int SMTP_PORT = 587;
+    public static final String SMTP_USERNAME = "renjosh.neust@gmail.com"; // CHANGE THIS
+    public static final String SMTP_PASSWORD = "fkrk alxl eaqq xbxp"; // CHANGE THIS (App Password, not login password)
+    public static final String SMTP_FROM_NAME = "Barangay E-Reporting System";
+    public static final boolean SMTP_USE_TLS = true;
+
     // Connection Timeout (in seconds)
     public static final int DB_TIMEOUT = 5;
 

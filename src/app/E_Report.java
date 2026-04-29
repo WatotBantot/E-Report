@@ -13,8 +13,8 @@ import models.Credential;
 import models.UserInfo;
 import models.UserSession;
 import config.UIConfig;
-import features.viewing.FullComplaintDisplayView;
 import features.views.AllReportsView;
+import features.views.ComplaintDetailView;
 import features.views.ComplaintStatusUpdateView;
 import features.views.DashboardView;
 import features.views.HomepageView;
@@ -105,7 +105,7 @@ public class E_Report extends JFrame {
             case "usermanagement" -> add(new UserManagementView(this));
             case "submitreport" -> add(new SubmitReportView(this));
             case "updatestatus" -> add(new ComplaintStatusUpdateView(this));
-            case "compaintdetail" -> add(new FullComplaintDisplayView(this));
+            case "complaintdetail" -> add(new ComplaintDetailView(this));
         }
 
         revalidate();

@@ -117,6 +117,17 @@ public class SubmitReportMapPanel extends JPanel {
         });
     }
 
+    public void setPinLocation(double latitude, double longitude) {
+        this.pinLat = latitude;
+        this.pinLon = longitude;
+
+        // Repaint to show the pin
+        repaint();
+
+        // If you have a map image, you might want to center it on this location
+        // Or draw a marker at the calculated pixel position
+    }
+
     public void setCenterAndPin(double lat, double lon) {
         centerLat = lat;
         centerLon = lon;
