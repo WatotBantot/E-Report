@@ -2,8 +2,11 @@ package features.layout.common;
 
 import app.E_Report;
 import features.components.RoundedLineBorder;
+import features.core.usermanagement.PasswordVerificationPanel;
 import models.UserInfo;
 import models.UserSession;
+import services.controller.ProfileUpdateController;
+import services.controller.ProfileUpdateController.VerifyResult;
 import services.controller.UserServiceController;
 
 import javax.swing.*;
@@ -31,6 +34,7 @@ public class ProfilePanel extends JPanel {
 
     private final E_Report app;
     private final Runnable onChangePassword;
+    private final ProfileUpdateController profileController;
     private boolean isEditing = false;
     private boolean hasUnsavedChanges = false;
     private Map<String, String> originalValues = new HashMap<>();
@@ -41,9 +45,13 @@ public class ProfilePanel extends JPanel {
     private final SecurityCard securityCard;
     private final ProfileStatusBar statusBar;
 
+    private JDialog passwordDialog;
+    private PasswordVerificationPanel passwordPanel;
+
     public ProfilePanel(E_Report app, Runnable onChangePassword) {
         this.app = app;
         this.onChangePassword = onChangePassword;
+        this.profileController = new ProfileUpdateController();
 
         headerPanel = new ProfileHeaderPanel("Profile Settings", () -> {
             if (hasUnsavedChanges) {
@@ -61,7 +69,6 @@ public class ProfilePanel extends JPanel {
         securityCard = new SecurityCard();
         statusBar = new ProfileStatusBar();
 
-        // Wire the security card callback right here — decoupled, no panel references
         securityCard.setOnChangePasswordAction(onChangePassword);
 
         setupUI();
@@ -137,15 +144,12 @@ public class ProfilePanel extends JPanel {
         accountInfoCard.getEditButton().addActionListener(e -> toggleEditMode());
         accountInfoCard.getCancelButton().addActionListener(e -> cancelEdit());
 
-        // REMOVED: securityCard.getChangePasswordButton().addActionListener(...)
-        // The callback is already wired in the constructor via
-        // setOnChangePasswordAction()
-
         registerKeyboardAction(
                 e -> toggleEditMode(),
                 KeyStroke.getKeyStroke(KeyEvent.VK_E, KeyEvent.CTRL_DOWN_MASK),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
+        // Validation listeners — only for editable fields
         accountInfoCard.getEmailField().getDocument().addDocumentListener(new ValidationListener(
                 accountInfoCard.getEmailField(),
                 () -> isValidEmail(accountInfoCard.getEmailField().getText()),
@@ -155,12 +159,10 @@ public class ProfilePanel extends JPanel {
                 () -> isValidPhone(accountInfoCard.getPhoneField().getText()),
                 "Invalid phone format"));
 
+        // Dirty check — only editable fields
         DocumentChangeListener dirtyListener = new DocumentChangeListener();
-        accountInfoCard.getNameField().getDocument().addDocumentListener(dirtyListener);
         accountInfoCard.getPhoneField().getDocument().addDocumentListener(dirtyListener);
         accountInfoCard.getEmailField().getDocument().addDocumentListener(dirtyListener);
-        accountInfoCard.getAddressField().getDocument().addDocumentListener(dirtyListener);
-        accountInfoCard.getPurokField().getDocument().addDocumentListener(dirtyListener);
         accountInfoCard.getUsernameField().getDocument().addDocumentListener(dirtyListener);
     }
 
@@ -170,17 +172,12 @@ public class ProfilePanel extends JPanel {
         if (isEditing) {
             storeOriginalValues();
             accountInfoCard.setFieldsEditable(true);
-            accountInfoCard.getEditButton().setText("✅ Save");
+            accountInfoCard.getEditButton().setText("Save");
             accountInfoCard.getCancelButton().setVisible(true);
-            showStatus("Editing profile information...", WARNING);
+            showStatus("Editing contact information...", WARNING);
         } else {
             if (validateAccountInfo()) {
-                saveAccountInfo();
-                accountInfoCard.setFieldsEditable(false);
-                accountInfoCard.getEditButton().setText("✏️ Edit");
-                accountInfoCard.getCancelButton().setVisible(false);
-                hasUnsavedChanges = false;
-                showStatus("Profile updated successfully!", SUCCESS);
+                promptForPasswordAndSave();
             } else {
                 isEditing = true;
             }
@@ -189,6 +186,119 @@ public class ProfilePanel extends JPanel {
         accountInfoCard.updateFieldBackgrounds(isEditing);
         revalidate();
         repaint();
+    }
+
+    private void promptForPasswordAndSave() {
+        UserSession session = app.getUserSession();
+        if (session == null) {
+            showStatus("Session expired. Please log in again.", ERROR);
+            isEditing = true;
+            return;
+        }
+
+        passwordDialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
+                "Confirm Changes", true);
+        passwordDialog.setSize(400, 300);
+        passwordDialog.setLocationRelativeTo(this);
+        passwordDialog.setResizable(false);
+
+        passwordPanel = new PasswordVerificationPanel(new PasswordVerificationPanel.Listener() {
+            @Override
+            public void onVerified() {
+                verifyAndSave(session.getUserId(), passwordPanel.getPassword());
+            }
+
+            @Override
+            public void onCancelled() {
+                passwordDialog.dispose();
+                isEditing = true;
+                accountInfoCard.setFieldsEditable(true);
+                accountInfoCard.getEditButton().setText("Save");
+                accountInfoCard.getCancelButton().setVisible(true);
+                accountInfoCard.updateFieldBackgrounds(true);
+            }
+        });
+
+        passwordPanel.setPromptText(
+                "Confirm Your Identity",
+                "Enter your password to save changes to email, phone, or username");
+
+        passwordDialog.add(passwordPanel);
+        passwordDialog.setVisible(true);
+    }
+
+    private void verifyAndSave(int userId, String password) {
+        SwingWorker<VerifyResult, Void> worker = new SwingWorker<>() {
+            @Override
+            protected VerifyResult doInBackground() {
+                return profileController.verifyPassword(userId, password);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    VerifyResult result = get();
+                    if (result.success) {
+                        passwordDialog.dispose();
+                        doSaveProfile();
+                    } else {
+                        passwordPanel.showError(result.message);
+                    }
+                } catch (Exception e) {
+                    passwordPanel.showError("Verification error. Please try again.");
+                    e.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void doSaveProfile() {
+        UserInfo ui = buildUserInfoFromFields();
+        String newUsername = accountInfoCard.getUsernameField().getText().trim();
+
+        boolean updated = profileController.updateProfile(ui, newUsername);
+
+        if (updated) {
+            app.setUserInfo(ui);
+            if (app.getUserSession() != null) {
+                app.getUserSession().setUsername(newUsername);
+            }
+
+            accountInfoCard.setFieldsEditable(false);
+            accountInfoCard.getEditButton().setText("Edit");
+            accountInfoCard.getCancelButton().setVisible(false);
+            hasUnsavedChanges = false;
+            showStatus("Contact information updated successfully!", SUCCESS);
+        } else {
+            showStatus("Failed to update profile. Username may already be taken.", ERROR);
+            isEditing = true;
+            accountInfoCard.setFieldsEditable(true);
+            accountInfoCard.getEditButton().setText("Save");
+            accountInfoCard.getCancelButton().setVisible(true);
+        }
+
+        accountInfoCard.updateFieldBackgrounds(isEditing);
+        revalidate();
+        repaint();
+    }
+
+    private UserInfo buildUserInfoFromFields() {
+        UserInfo current = app.getUserInfo();
+        UserInfo ui = new UserInfo();
+
+        ui.setUI_ID(current != null ? current.getUI_ID() : 0);
+        ui.setFName(current != null ? current.getFName() : "");
+        ui.setMName(current != null ? current.getMName() : "");
+        ui.setLName(current != null ? current.getLName() : "");
+        ui.setSex(current != null ? current.getSex() : "");
+        ui.setHouseNum(current != null ? current.getHouseNum() : "");
+        ui.setStreet(current != null ? current.getStreet() : "");
+        ui.setPurok(current != null ? current.getPurok() : "");
+        ui.setContact(accountInfoCard.getPhoneField().getText().trim());
+        ui.setEmail(accountInfoCard.getEmailField().getText().trim());
+
+        return ui;
     }
 
     private void cancelEdit() {
@@ -203,7 +313,7 @@ public class ProfilePanel extends JPanel {
 
         isEditing = false;
         accountInfoCard.setFieldsEditable(false);
-        accountInfoCard.getEditButton().setText("✏️ Edit");
+        accountInfoCard.getEditButton().setText("Edit");
         accountInfoCard.getCancelButton().setVisible(false);
         hasUnsavedChanges = false;
         showStatus("Edit cancelled", TEXT_SECONDARY);
@@ -211,20 +321,14 @@ public class ProfilePanel extends JPanel {
     }
 
     private void storeOriginalValues() {
-        originalValues.put("name", accountInfoCard.getNameField().getText());
         originalValues.put("phone", accountInfoCard.getPhoneField().getText());
         originalValues.put("email", accountInfoCard.getEmailField().getText());
-        originalValues.put("address", accountInfoCard.getAddressField().getText());
-        originalValues.put("purok", accountInfoCard.getPurokField().getText());
         originalValues.put("username", accountInfoCard.getUsernameField().getText());
     }
 
     private void restoreOriginalValues() {
-        accountInfoCard.getNameField().setText(originalValues.get("name"));
         accountInfoCard.getPhoneField().setText(originalValues.get("phone"));
         accountInfoCard.getEmailField().setText(originalValues.get("email"));
-        accountInfoCard.getAddressField().setText(originalValues.get("address"));
-        accountInfoCard.getPurokField().setText(originalValues.get("purok"));
         accountInfoCard.getUsernameField().setText(originalValues.get("username"));
     }
 
@@ -239,17 +343,12 @@ public class ProfilePanel extends JPanel {
             accountInfoCard.getPhoneField().requestFocus();
             return false;
         }
-        if (accountInfoCard.getNameField().getText().trim().isEmpty()) {
-            showStatus("Name cannot be empty", ERROR);
-            accountInfoCard.getNameField().requestFocus();
+        if (accountInfoCard.getUsernameField().getText().trim().isEmpty()) {
+            showStatus("Username cannot be empty", ERROR);
+            accountInfoCard.getUsernameField().requestFocus();
             return false;
         }
         return true;
-    }
-
-    private void saveAccountInfo() {
-        profileInfoCard.setDisplayName(accountInfoCard.getNameField().getText());
-        profileInfoCard.setDisplayRole("User");
     }
 
     private void showStatus(String message, Color color) {
@@ -295,7 +394,7 @@ public class ProfilePanel extends JPanel {
                 String address = addrBuilder.toString().trim();
 
                 String purok = safeString(ui.getPurok());
-                String username = (app.getUserSession() != null) ? safeString(app.getUserSession().getUsername()) : "";
+                String username = safeString(us.getUsername());
                 String role = safeString(us.getRole());
 
                 setProfileData(fullName, phone, email, address, purok, username, role);

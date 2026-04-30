@@ -1,6 +1,7 @@
 package features.views;
 
 import app.E_Report;
+import config.AppConfig;
 import config.UIConfig;
 import features.components.HeaderPanel;
 import features.components.NavPanel;
@@ -42,7 +43,6 @@ public class SubmitReportView extends JPanel {
     private final E_Report app;
     private HeaderPanel header;
     private NavPanel nav;
-    private final JTextField titleField;
     private final JComboBox<String> categoryCombo;
     private final JComboBox<String> purokCombo;
     private final JTextField locationField;
@@ -60,13 +60,12 @@ public class SubmitReportView extends JPanel {
         this.app = app;
         setLayout(new BorderLayout());
 
-        titleField = new JTextField();
         categoryCombo = DashboardFormUtils.createComboWithPlaceholder(
-                SubmitReportConstants.CATEGORY_OPTIONS,
-                "Choose category of issue");
+                AppConfig.COMPLAINT_TYPES,
+                AppConfig.REPORT_CATEGORY_PLACEHOLDER);
         purokCombo = DashboardFormUtils.createComboWithPlaceholder(
-                SubmitReportConstants.PUROK_OPTIONS,
-                "Choose a purok");
+                AppConfig.REPORT_PUROK_OPTIONS,
+                AppConfig.REPORT_PUROK_PLACEHOLDER);
         locationField = new JTextField();
         latitudeField = new JTextField();
         longitudeField = new JTextField();
@@ -78,7 +77,7 @@ public class SubmitReportView extends JPanel {
         longitudeField.setEditable(false);
         detailsArea.setLineWrap(true);
         detailsArea.setWrapStyleWord(true);
-        DashboardFormUtils.installPlaceholder(locationField, "Street, Landmark");
+        DashboardFormUtils.installPlaceholder(locationField, AppConfig.REPORT_LOCATION_PLACEHOLDER);
 
         mapPanel = new SubmitReportMapPanel(new SubmitReportMapPanel.Listener() {
             @Override
@@ -127,9 +126,9 @@ public class SubmitReportView extends JPanel {
 
     private void setNavMenus() {
         String role = app.getUserSession().getRole();
-        if (role.equalsIgnoreCase("captain")) {
+        if (role.equalsIgnoreCase(AppConfig.ROLE_CAPTAIN)) {
             nav.setCaptainMenus(route -> app.navigate(route));
-        } else if (role.equalsIgnoreCase("secretary")) {
+        } else if (role.equalsIgnoreCase(AppConfig.ROLE_SECRETARY)) {
             nav.setSecretaryMenus(route -> app.navigate(route));
         } else {
             nav.setResidentMenus(route -> app.navigate(route));
@@ -157,8 +156,6 @@ public class SubmitReportView extends JPanel {
         leftColumn.setLayout(new BoxLayout(leftColumn, BoxLayout.Y_AXIS));
         leftColumn.add(createPageHeader());
         leftColumn.add(Box.createVerticalStrut(18));
-        leftColumn.add(DashboardFormUtils.createLabeledField("Title", titleField));
-        leftColumn.add(Box.createVerticalStrut(12));
         leftColumn.add(DashboardFormUtils.createLabeledField("Category", categoryCombo));
         leftColumn.add(Box.createVerticalStrut(12));
         leftColumn.add(DashboardFormUtils.createLabeledField("Purok", purokCombo));
@@ -397,23 +394,18 @@ public class SubmitReportView extends JPanel {
     }
 
     private ComplaintDetail buildComplaintFromForm() {
-        String title = titleField.getText().trim();
-        if (title.isEmpty()) {
-            throw new MissingReportFieldException("title", "Title is required.");
-        }
-
-        String category = getSelectedComboValue(categoryCombo, "Choose category of issue");
+        String category = getSelectedComboValue(categoryCombo, AppConfig.REPORT_CATEGORY_PLACEHOLDER);
         if (category.isEmpty()) {
             throw new MissingReportFieldException("category", "Category is required.");
         }
 
-        String purok = getSelectedComboValue(purokCombo, "Choose a purok");
+        String purok = getSelectedComboValue(purokCombo, AppConfig.REPORT_PUROK_PLACEHOLDER);
         if (purok.isEmpty()) {
             throw new MissingReportFieldException("purok", "Purok is required.");
         }
 
         String location = locationField.getText().trim();
-        if (location.isEmpty() || "Street, Landmark".equals(location)) {
+        if (location.isEmpty() || AppConfig.REPORT_LOCATION_PLACEHOLDER.equals(location)) {
             throw new MissingReportFieldException("location", "Location is required.");
         }
 
@@ -443,7 +435,9 @@ public class SubmitReportView extends JPanel {
         String street = parseStreetFromLocation(location);
 
         ComplaintDetail complaint = new ComplaintDetail();
-        complaint.setSubject(title);
+        // Auto-generate subject from category + current timestamp
+        complaint.setSubject(category + " - " + java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
         complaint.setType(category);
         complaint.setPurok(purok);
         complaint.setStreet(street);
@@ -536,10 +530,9 @@ public class SubmitReportView extends JPanel {
     }
 
     private void clearForm() {
-        titleField.setText("");
         categoryCombo.setSelectedIndex(0);
         purokCombo.setSelectedIndex(0);
-        locationField.setText("Street, Landmark");
+        locationField.setText(AppConfig.REPORT_LOCATION_PLACEHOLDER);
         locationField.setForeground(Color.GRAY);
         detailsArea.setText("");
         latitudeField.setText("");
@@ -588,7 +581,6 @@ public class SubmitReportView extends JPanel {
             }
         };
 
-        titleField.getDocument().addDocumentListener(listener);
         locationField.getDocument().addDocumentListener(listener);
         detailsArea.getDocument().addDocumentListener(listener);
         categoryCombo.addActionListener(e -> updateSubmitButtonState());
@@ -609,17 +601,14 @@ public class SubmitReportView extends JPanel {
         if (selectedFile == null) {
             return false;
         }
-        if (titleField.getText().trim().isEmpty()) {
+        if (getSelectedComboValue(categoryCombo, AppConfig.REPORT_CATEGORY_PLACEHOLDER).isEmpty()) {
             return false;
         }
-        if (getSelectedComboValue(categoryCombo, "Choose category of issue").isEmpty()) {
-            return false;
-        }
-        if (getSelectedComboValue(purokCombo, "Choose a purok").isEmpty()) {
+        if (getSelectedComboValue(purokCombo, AppConfig.REPORT_PUROK_PLACEHOLDER).isEmpty()) {
             return false;
         }
         String location = locationField.getText().trim();
-        if (location.isEmpty() || "Street, Landmark".equals(location)) {
+        if (location.isEmpty() || AppConfig.REPORT_LOCATION_PLACEHOLDER.equals(location)) {
             return false;
         }
         if (detailsArea.getText().trim().isEmpty()) {

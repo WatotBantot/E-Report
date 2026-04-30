@@ -13,7 +13,7 @@ public class AppConfig {
     public static final String SMTP_HOST = "smtp.gmail.com";
     public static final int SMTP_PORT = 587;
     public static final String SMTP_USERNAME = "renjosh.neust@gmail.com"; // CHANGE THIS
-    public static final String SMTP_PASSWORD = "fkrk alxl eaqq xbxp"; // CHANGE THIS (App Password, not login password)
+    public static final String SMTP_PASSWORD = "fkrk alxl eaqq xbxp"; // CHANGE THIS
     public static final String SMTP_FROM_NAME = "Barangay E-Reporting System";
     public static final boolean SMTP_USE_TLS = true;
 
@@ -21,6 +21,43 @@ public class AppConfig {
     public static final String[] COMPLAINT_TYPES = {
             "Garbage", "Theft", "Robbery"
     };
+
+    public static final String[] REPORT_PUROK_OPTIONS = {
+            "Purok 1",
+            "Purok 2",
+            "Purok 3",
+            "Purok 4",
+            "Purok 5"
+    };
+
+    public static final String[] REPORT_BACKGROUND_CANDIDATES = {
+            "desktop.png",
+            "images/desktop.png",
+            "desktop.jpg",
+            "images/desktop.jpg",
+            "images/desktop2.png",
+            "images/desktop2.jpg",
+            "images/desktop2.jpeg",
+            "images/desktop2.PNG",
+            "images/desktop2.JPG",
+            "images/desktop2.JPEG"
+    };
+
+    // Default map center for the e-report service coverage
+    public static final double REPORT_DEFAULT_MAP_LATITUDE = 15.4807;
+    public static final double REPORT_DEFAULT_MAP_LONGITUDE = 121.0894;
+    public static final int REPORT_DEFAULT_MAP_ZOOM = 16;
+    public static final int REPORT_SERVICE_AREA_RADIUS_METERS = 5000;
+
+    // UI Placeholders
+    public static final String REPORT_CATEGORY_PLACEHOLDER = "Choose category of issue";
+    public static final String REPORT_PUROK_PLACEHOLDER = "Choose a purok";
+    public static final String REPORT_LOCATION_PLACEHOLDER = "Street, Landmark";
+
+    // Roles
+    public static final String ROLE_RESIDENT = "Resident";
+    public static final String ROLE_CAPTAIN = "Captain";
+    public static final String ROLE_SECRETARY = "Secretary";
 
     // Connection Timeout (in seconds)
     public static final int DB_TIMEOUT = 5;

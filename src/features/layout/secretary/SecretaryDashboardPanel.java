@@ -12,6 +12,7 @@ import features.core.dashboardpanel.DashboardInfoCardsPanel;
 import features.core.dashboardpanel.captain.ActivityItem;
 import features.core.dashboardpanel.captain.RecentActivitiesPanel;
 import features.core.dashboardpanel.secretary.TaskNotesPanel;
+import models.ComplaintDetail;
 import services.controller.RecentActivityController;
 import services.fetcher.SecretaryDashboardFetcher;
 
@@ -136,10 +137,30 @@ public class SecretaryDashboardPanel extends JPanel {
 
     private void handleReportAction(int row) {
         List<Object[]> reports = app.getSecretaryReportDataList();
-        if (row >= 0 && row < reports.size()) {
-            String reportId = (String) reports.get(row)[0];
-            JOptionPane.showMessageDialog(this, "Viewing Report: " + reportId);
+        if (row < 0 || row >= reports.size())
+            return;
+
+        Object idObj = reports.get(row)[0];
+        int reportId = (idObj instanceof Integer) ? (Integer) idObj : Integer.parseInt(idObj.toString());
+
+        ComplaintDetail cd = fetchComplaintFromDb(reportId);
+
+        if (cd != null) {
+            app.setCurrentComplaint(cd);
+            app.setReturnRoute("reports");
+            app.navigate("complaintdetail");
         }
+    }
+
+    private ComplaintDetail fetchComplaintFromDb(int id) {
+        var all = new services.controller.ComplaintServiceController().getAllComplaints();
+        if (all == null)
+            return null;
+        for (ComplaintDetail cd : all) {
+            if (cd.getComplaintId() == id)
+                return cd;
+        }
+        return null;
     }
 
     public void updateStatValue(int cardIndex, int value) {

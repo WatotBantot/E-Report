@@ -121,7 +121,7 @@ public class ComplaintContentPanel extends JPanel {
         this.returnRoute = (route != null && !route.isBlank()) ? route : "dashboard";
     }
 
-    // ==================== MAIN CONTENT (no inner scroll) ====================
+    // ==================== MAIN CONTENT ====================
 
     private JPanel createMainContent() {
         mainContent = new JPanel();
@@ -133,7 +133,7 @@ public class ComplaintContentPanel extends JPanel {
         JPanel backRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
         backRow.setOpaque(false);
         backRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        backRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        backRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 32));
         btnBackTop = createGhostButton("← Back");
         btnBackTop.addActionListener(e -> app.navigate(returnRoute));
         backRow.add(btnBackTop);
@@ -143,18 +143,18 @@ public class ComplaintContentPanel extends JPanel {
         // Header row
         JPanel header = createHeaderRow();
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
-        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        header.setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
         mainContent.add(header);
         mainContent.add(Box.createVerticalStrut(12));
 
         // Status timeline
         JPanel timeline = createStatusTimeline();
         timeline.setAlignmentX(Component.LEFT_ALIGNMENT);
-        timeline.setMaximumSize(new Dimension(Integer.MAX_VALUE, 90));
+        timeline.setMaximumSize(new Dimension(Short.MAX_VALUE, 90));
         mainContent.add(timeline);
         mainContent.add(Box.createVerticalStrut(12));
 
-        // Update panel (hidden by default)
+        // Update panel (hidden by default) - NO maximum size, let it size naturally
         updatePanel = createUpdatePanel();
         updatePanel.setVisible(false);
         updatePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -171,6 +171,8 @@ public class ComplaintContentPanel extends JPanel {
         actionsTakenPanel = createActionsTakenPanel();
         actionsTakenPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         mainContent.add(actionsTakenPanel);
+
+        // GLUE: absorbs all extra vertical space, prevents components from stretching
         mainContent.add(Box.createVerticalGlue());
 
         return mainContent;
@@ -181,7 +183,7 @@ public class ComplaintContentPanel extends JPanel {
     private JPanel createHeaderRow() {
         JPanel headerRow = new JPanel(new BorderLayout(16, 0));
         headerRow.setOpaque(false);
-        headerRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
+        headerRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 42));
 
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         left.setOpaque(false);
@@ -282,7 +284,7 @@ public class ComplaintContentPanel extends JPanel {
                 line.setOpaque(true);
                 line.setBackground(C_TIMELINE_INACTIVE);
                 line.setPreferredSize(new Dimension(60, 3));
-                line.setMaximumSize(new Dimension(Integer.MAX_VALUE, 3));
+                line.setMaximumSize(new Dimension(Short.MAX_VALUE, 3));
                 timelineConnectors[i] = line;
 
                 gbc.gridx = i * 2 + 1;
@@ -444,12 +446,13 @@ public class ComplaintContentPanel extends JPanel {
         panel.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(59, 130, 246, 90), 1, true),
                 new EmptyBorder(16, 20, 16, 20)));
-        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        // REMOVED: setMaximumSize(Integer.MAX_VALUE, Integer.MAX_VALUE) — this was
+        // causing infinite expansion
 
         // Title only (no close button)
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
-        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+        header.setMaximumSize(new Dimension(Short.MAX_VALUE, 28));
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
         JLabel title = new JLabel("Update Complaint Status");
@@ -462,7 +465,7 @@ public class ComplaintContentPanel extends JPanel {
         JPanel currentRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         currentRow.setOpaque(false);
         currentRow.setAlignmentX(Component.LEFT_ALIGNMENT);
-        currentRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 24));
+        currentRow.setMaximumSize(new Dimension(Short.MAX_VALUE, 24));
         JLabel lblCurrentPrefix = new JLabel("Current Status:");
         lblCurrentPrefix.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         JLabel lblCurrent = new JLabel("—");
@@ -478,7 +481,7 @@ public class ComplaintContentPanel extends JPanel {
         JPanel formGrid = new JPanel(new GridBagLayout());
         formGrid.setOpaque(false);
         formGrid.setAlignmentX(Component.LEFT_ALIGNMENT);
-        formGrid.setMaximumSize(new Dimension(Integer.MAX_VALUE, 140));
+        formGrid.setMaximumSize(new Dimension(Short.MAX_VALUE, 140));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(0, 0, 0, 10);
@@ -493,7 +496,7 @@ public class ComplaintContentPanel extends JPanel {
         cmbStatus.setFont(new Font("Segoe UI", Font.PLAIN, 13));
         cmbStatus.setBackground(Color.WHITE);
         cmbStatus.setBorder(BorderFactory.createLineBorder(C_BORDER, 1, true));
-        cmbStatus.setMaximumSize(new Dimension(Integer.MAX_VALUE, 32));
+        cmbStatus.setMaximumSize(new Dimension(Short.MAX_VALUE, 32));
         cmbStatus.addActionListener(e -> onStatusChanged());
         statusWrap.add(lblStatus, BorderLayout.NORTH);
         statusWrap.add(cmbStatus, BorderLayout.CENTER);
@@ -728,7 +731,7 @@ public class ComplaintContentPanel extends JPanel {
 
         JPanel header = new JPanel(new BorderLayout(0, 0));
         header.setOpaque(false);
-        header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 26));
+        header.setMaximumSize(new Dimension(Short.MAX_VALUE, 26));
         header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, C_BORDER));
         header.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -1210,7 +1213,7 @@ public class ComplaintContentPanel extends JPanel {
                 for (ComplaintHistoryDetail h : history) {
                     JPanel row = new JPanel(new GridLayout(1, 3, 8, 0));
                     row.setOpaque(false);
-                    row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 28));
+                    row.setMaximumSize(new Dimension(Short.MAX_VALUE, 28));
                     row.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(241, 245, 249)));
 
                     JLabel date = new JLabel(h.getDateTimeUpdated() != null ? h.getDateTimeUpdated().toString() : "—");

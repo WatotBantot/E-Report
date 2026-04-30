@@ -3,10 +3,15 @@ package features.core.usermanagement;
 import config.UIConfig;
 import features.components.UIButton;
 import features.components.UIPasswordInput;
+
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
+/**
+ * Generic password verification panel — reusable for any password check flow.
+ */
 public class PasswordVerificationPanel extends JPanel {
 
     public interface Listener {
@@ -18,122 +23,170 @@ public class PasswordVerificationPanel extends JPanel {
     private final Listener listener;
     private final UIPasswordInput passwordField;
     private final JLabel errorLabel;
-    private String expectedPassword = "password123";
+    private final JLabel titleLabel;
+    private final JLabel subtitleLabel;
+    private String expectedPassword = null;
 
     public PasswordVerificationPanel(Listener listener) {
         this.listener = listener;
         setLayout(new GridBagLayout());
         setOpaque(false);
+        setBorder(new EmptyBorder(24, 32, 24, 32));
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.insets = new Insets(6, 0, 6, 0);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.gridx = 0;
+        gbc.weightx = 1.0;
 
         // Title with lock icon
-        JLabel titleLabel = new JLabel("Secretary Verification Required", loadIcon(UIConfig.LOCK_ICON_PATH, 20),
+        titleLabel = new JLabel("Verification Required", loadIcon(UIConfig.LOCK_ICON_PATH, 24),
                 SwingConstants.CENTER);
         titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        titleLabel.setForeground(new Color(50, 50, 50));
+        titleLabel.setForeground(new Color(30, 41, 59));
         titleLabel.setIconTextGap(10);
-        gbc.gridx = 0;
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        panelAdd(titleLabel, gbc);
+        add(titleLabel, gbc);
 
-        JLabel subtitleLabel = new JLabel("Please enter your password to edit user information", SwingConstants.CENTER);
+        // Subtitle — wrapped, centered
+        subtitleLabel = new JLabel("<html><div style='text-align: center; width: 260px;'>"
+                + "Please enter your password to continue"
+                + "</div></html>", SwingConstants.CENTER);
         subtitleLabel.setFont(UIConfig.BODY);
-        subtitleLabel.setForeground(new Color(100, 100, 100));
+        subtitleLabel.setForeground(new Color(100, 116, 139));
+        subtitleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gbc.gridy = 1;
-        gbc.insets = new Insets(5, 10, 20, 10);
-        panelAdd(subtitleLabel, gbc);
+        gbc.insets = new Insets(4, 0, 20, 0);
+        add(subtitleLabel, gbc);
 
+        // Password label
         JLabel passwordLabel = new JLabel("Password:");
-        passwordLabel.setFont(UIConfig.BODY);
+        passwordLabel.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        passwordLabel.setForeground(TEXT_PRIMARY);
+        passwordLabel.setHorizontalAlignment(SwingConstants.LEFT);
         gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(10, 10, 5, 10);
-        panelAdd(passwordLabel, gbc);
+        gbc.insets = new Insets(8, 0, 6, 0);
+        add(passwordLabel, gbc);
 
-        passwordField = new UIPasswordInput(20);
-        passwordField.setPreferredSize(new Dimension(250, 38));
+        // Password input — full width, proper padding
+        passwordField = new UIPasswordInput(24);
         passwordField.setFont(new Font("Segoe UI", Font.PLAIN, 14));
-        passwordField.setPlaceholder("Enter secretary password");
+        passwordField.setPreferredSize(new Dimension(280, 42));
+        passwordField.setMinimumSize(new Dimension(280, 42));
+        passwordField.setPlaceholder("Enter your password");
         passwordField.setIdleBorderColor(new Color(200, 200, 200));
         gbc.gridy = 3;
-        gbc.insets = new Insets(0, 10, 5, 10);
-        panelAdd(passwordField, gbc);
+        gbc.insets = new Insets(0, 0, 8, 0);
+        add(passwordField, gbc);
 
-        errorLabel = new JLabel("", SwingConstants.CENTER);
+        // Error label
+        errorLabel = new JLabel(" ", SwingConstants.CENTER);
         errorLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         errorLabel.setForeground(new Color(220, 60, 60));
+        errorLabel.setHorizontalAlignment(SwingConstants.CENTER);
         gbc.gridy = 4;
-        gbc.insets = new Insets(0, 10, 15, 10);
-        panelAdd(errorLabel, gbc);
+        gbc.insets = new Insets(0, 0, 16, 0);
+        add(errorLabel, gbc);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        // Button panel — centered, using UIButton
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         buttonPanel.setOpaque(false);
-
-        UIButton verifyButton = new UIButton(
-                "Verify",
-                new Color(25, 118, 210),
-                new Dimension(100, 35),
-                UIConfig.BODY,
-                8,
-                UIButton.ButtonType.PRIMARY);
-        verifyButton.addActionListener(e -> verify());
 
         UIButton cancelButton = new UIButton(
                 "Cancel",
                 Color.WHITE,
-                new Dimension(100, 35),
-                UIConfig.BODY,
+                new Dimension(100, 38),
+                new Font("Segoe UI", Font.BOLD, 13),
                 8,
                 UIButton.ButtonType.OUTLINED);
+        cancelButton.setHoverBg(new Color(248, 250, 252));
+        cancelButton.setPressedBg(new Color(241, 245, 249));
         cancelButton.addActionListener(e -> {
             if (listener != null)
                 listener.onCancelled();
         });
 
-        buttonPanel.add(verifyButton);
+        UIButton verifyButton = new UIButton(
+                "Verify",
+                new Color(37, 99, 235),
+                new Dimension(100, 38),
+                new Font("Segoe UI", Font.BOLD, 13),
+                8,
+                UIButton.ButtonType.PRIMARY);
+        verifyButton.setHoverBg(new Color(29, 78, 216));
+        verifyButton.setPressedBg(new Color(30, 64, 175));
+        verifyButton.addActionListener(e -> verify());
+
         buttonPanel.add(cancelButton);
+        buttonPanel.add(verifyButton);
 
         gbc.gridy = 5;
-        gbc.insets = new Insets(10, 10, 10, 10);
-        panelAdd(buttonPanel, gbc);
+        gbc.insets = new Insets(8, 0, 0, 0);
+        add(buttonPanel, gbc);
 
+        // Enter key support
         passwordField.addActionListener(e -> verify());
     }
 
-    private void panelAdd(Component comp, GridBagConstraints gbc) {
-        add(comp, gbc);
+    private static final Color TEXT_PRIMARY = new Color(15, 23, 42);
+
+    /**
+     * Sets custom title and subtitle text.
+     */
+    public void setPromptText(String title, String subtitle) {
+        titleLabel.setText(title);
+        subtitleLabel.setText("<html><div style='text-align: center; width: 260px;'>"
+                + subtitle + "</div></html>");
+    }
+
+    /**
+     * Backward-compatible: sets an expected password for client-side verification.
+     */
+    public void setExpectedPassword(String password) {
+        this.expectedPassword = password;
     }
 
     private void verify() {
         String entered = passwordField.getValue();
 
         if (entered.isEmpty()) {
-            errorLabel.setText("Please enter a password");
+            showError("Please enter a password");
             return;
         }
-        if (entered.equals(expectedPassword)) {
-            errorLabel.setText("");
+
+        if (expectedPassword != null) {
+            if (!entered.equals(expectedPassword)) {
+                showError("Incorrect password. Please try again.");
+                return;
+            }
+            errorLabel.setText(" ");
             passwordField.setText("");
-            if (listener != null)
+            if (listener != null) {
                 listener.onVerified();
-        } else {
-            errorLabel.setText("Incorrect password. Please try again.");
-            passwordField.setText("");
-            passwordField.requestFocus();
+            }
+            return;
+        }
+
+        if (listener != null) {
+            listener.onVerified();
         }
     }
 
-    public void setExpectedPassword(String password) {
-        this.expectedPassword = password;
+    public String getPassword() {
+        return passwordField.getValue();
+    }
+
+    public void showError(String message) {
+        errorLabel.setText(message);
+        passwordField.setText("");
+        passwordField.requestFocus();
     }
 
     public void clear() {
         passwordField.setText("");
-        errorLabel.setText("");
+        errorLabel.setText(" ");
     }
 
     private static ImageIcon loadIcon(String path, int size) {

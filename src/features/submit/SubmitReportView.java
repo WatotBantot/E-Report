@@ -81,11 +81,11 @@ public class SubmitReportView extends JFrame {
 
         subjectField = new JTextField();
         categoryCombo = DashboardFormUtils.createComboWithPlaceholder(
-            SubmitReportConstants.CATEGORY_OPTIONS,
-            CATEGORY_PLACEHOLDER);
+                SubmitReportConstants.CATEGORY_OPTIONS,
+                CATEGORY_PLACEHOLDER);
         purokCombo = DashboardFormUtils.createComboWithPlaceholder(
-            SubmitReportConstants.PUROK_OPTIONS,
-            PUROK_PLACEHOLDER);
+                SubmitReportConstants.PUROK_OPTIONS,
+                PUROK_PLACEHOLDER);
         locationField = new JTextField();
         latitudeField = new JTextField();
         longitudeField = new JTextField();
@@ -349,7 +349,8 @@ public class SubmitReportView extends JFrame {
     }
 
     private ImageIcon loadScaledImageIcon(String fileName, int width, int height) {
-        File iconFile = new File(System.getProperty("user.dir") + File.separator + "images" + File.separator + fileName);
+        File iconFile = new File(
+                System.getProperty("user.dir") + File.separator + "images" + File.separator + fileName);
         if (!iconFile.exists()) {
             return null;
         }
@@ -570,10 +571,12 @@ public class SubmitReportView extends JFrame {
     }
 
     public static void main(String[] args) {
-        // NOTE: For production, launch E_Report.java instead (which handles authentication)
+        // NOTE: For production, launch E_Report.java instead (which handles
+        // authentication)
         // This main method is for testing purposes only
         SwingUtilities.invokeLater(() -> {
-            // Test with default resident session - replace with E_Report for real authentication
+            // Test with default resident session - replace with E_Report for real
+            // authentication
             UserSession testSession = new UserSession(1, ROLE_RESIDENT, true);
             SubmitReportView view = new SubmitReportView(testSession);
             view.setVisible(true);
